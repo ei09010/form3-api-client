@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -121,30 +120,8 @@ func TestNewClient_emptyBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 			accountClient, nil)
 	}
 
-	if err != nil {
-		if cerr, ok := err.(*ClientError); ok {
+	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
 
-			fmt.Println(cerr.ErrorMessage)
-
-			if cerr.ErrorMessage != expectedErrorMessage {
-				t.Errorf("Returned error message: got %s want %s",
-					cerr.ErrorMessage, expectedErrorMessage)
-			}
-
-			if cerr.ErrorType != expectedErrorType {
-				t.Errorf("Returned error type: got %v want %v",
-					cerr.ErrorType, expectedErrorType)
-			}
-
-			if cerr.BadStatusError != nil {
-				t.Errorf("Returned bad status error: got %v want %v",
-					cerr.BadStatusError, nil)
-			}
-
-		} else {
-			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
-		}
-	}
 }
 
 func TestNewClient_invalidBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
@@ -166,30 +143,8 @@ func TestNewClient_invalidBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 			accountClient, nil)
 	}
 
-	if err != nil {
-		if cerr, ok := err.(*ClientError); ok {
+	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
 
-			fmt.Println(cerr.ErrorMessage)
-
-			if cerr.ErrorMessage != expectedErrorMessage {
-				t.Errorf("Returned error message: got %s want %s",
-					cerr.ErrorMessage, expectedErrorMessage)
-			}
-
-			if cerr.ErrorType != expectedErrorType {
-				t.Errorf("Returned error type: got %v want %v",
-					cerr.ErrorType, expectedErrorType)
-			}
-
-			if cerr.BadStatusError != nil {
-				t.Errorf("Returned bad status error: got %v want %v",
-					cerr.BadStatusError, nil)
-			}
-
-		} else {
-			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
-		}
-	}
 }
 
 func TestNewClient_invalidTimeoutValue_returnsValidClientWithDefaultValue(t *testing.T) {
@@ -295,30 +250,7 @@ func TestNewClient_invalidBaseUrlAndinvalidTimeout_returnsBaseUrlParsingError(t 
 			accountClient, nil)
 	}
 
-	if err != nil {
-		if cerr, ok := err.(*ClientError); ok {
-
-			fmt.Println(cerr.ErrorMessage)
-
-			if cerr.ErrorMessage != expectedErrorMessage {
-				t.Errorf("Returned error message: got %s want %s",
-					cerr.ErrorMessage, expectedErrorMessage)
-			}
-
-			if cerr.ErrorType != expectedErrorType {
-				t.Errorf("Returned error type: got %v want %v",
-					cerr.ErrorType, expectedErrorType)
-			}
-
-			if cerr.BadStatusError != nil {
-				t.Errorf("Returned bad status error: got %v want %v",
-					cerr.BadStatusError, nil)
-			}
-
-		} else {
-			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
-		}
-	}
+	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
 }
 
 // FETCH TESTS
@@ -329,14 +261,10 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 	expectedCorrectResponse := `{"data":{"attributes":{"account_classification":"Personal","alternative_names":["Alternative Names."],"bank_id":"400300","bank_id_code":"GBDSC","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
-		if req.URL.Path == expectedCorrectRequest {
-			io.WriteString(w, expectedCorrectResponse)
-		} else {
-			io.WriteString(w, "Bad request")
-		}
-	}))
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, expectedCorrectResponse)
+	})
 
 	defer ts.Close()
 
@@ -455,7 +383,163 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 }
 
+func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
+
+	// Arrange
+
+	expectedErrorMessageResponse := `{"error_message":"record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"}`
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+
+	expectedErrorMessage := "record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"
+	expectedErrorType := HttResponseStandardError
+	expectedhttpStatus := http.StatusNotFound
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedhttpStatus)
+		io.WriteString(w, expectedErrorMessageResponse)
+	})
+
+	defer ts.Close()
+
+	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	// Act
+
+	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertBadStatusError(err, expectedErrorMessage, t, expectedErrorType, expectedCorrectRequest, expectedhttpStatus)
+}
+
+func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
+
+	// Arrange
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+
+	expectedErrorType := UnmarshallingError
+	expectedErrorMessage := "unexpected end of JSON input"
+
+	expectedhttpStatus := http.StatusInternalServerError
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedhttpStatus)
+	})
+
+	defer ts.Close()
+
+	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	// Act
+
+	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+}
+
+func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
+
+	// Arrange
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+
+	expectedErrorType := UnmarshallingError
+	expectedErrorMessage := "unexpected end of JSON input"
+
+	expectedhttpStatus := http.StatusOK
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedhttpStatus)
+	})
+
+	defer ts.Close()
+
+	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	// Act
+
+	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+}
+
+func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
+
+	// Arrange
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+	expectedResponseInvalidJson := `{"data":unt_classion":"Personal222","native_names":["Alternative Names."],"ban":"400300","bank_id_code":"G","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`
+
+	expectedErrorType := UnmarshallingError
+	expectedErrorMessage := "invalid character 'u' looking for beginning of value"
+
+	expectedhttpStatus := http.StatusOK
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedhttpStatus)
+		io.WriteString(w, expectedResponseInvalidJson)
+	})
+
+	defer ts.Close()
+
+	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	// Act
+
+	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+}
+
 // aux
+
+// newTestServer creates a multiplex server to handle API endpoints
+func newTestServer(path string, h func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	mux.HandleFunc(path, h)
+	return server
+}
 
 func equal(a, b []string) bool {
 	if len(a) != len(b) {
@@ -467,4 +551,65 @@ func equal(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func assertClientError(err error, expectedErrorMessage string, t *testing.T, expectedErrorType int) {
+	if err != nil {
+		if cerr, ok := err.(*ClientError); ok {
+
+			if cerr.ErrorMessage != expectedErrorMessage {
+				t.Errorf("Returned error message: got %s want %s",
+					cerr.ErrorMessage, expectedErrorMessage)
+			}
+
+			if cerr.ErrorType != expectedErrorType {
+				t.Errorf("Returned error type: got %v want %v",
+					cerr.ErrorType, expectedErrorType)
+			}
+
+			if cerr.BadStatusError != nil {
+				t.Errorf("Returned bad status error: got %v want %v",
+					cerr.BadStatusError, nil)
+			}
+
+		} else {
+			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
+		}
+
+	}
+}
+
+func assertBadStatusError(err error, expectedErrorMessage string, t *testing.T, expectedErrorType int, expectedCorrectRequest string, expectedhttpStatus int) {
+	if err != nil {
+		if cerr, ok := err.(*ClientError); ok {
+
+			if cerr.ErrorMessage != expectedErrorMessage {
+				t.Errorf("Returned error message: got %s want %s",
+					cerr.ErrorMessage, expectedErrorMessage)
+			}
+
+			if cerr.ErrorType != expectedErrorType {
+				t.Errorf("Returned error type: got %v want %v",
+					cerr.ErrorType, expectedErrorType)
+			}
+
+			if cerr.BadStatusError != nil {
+
+				if cerr.BadStatusError.URL != expectedCorrectRequest {
+					t.Errorf("Returned url status for bad status error: got %s want %s",
+						cerr.BadStatusError.URL, expectedCorrectRequest)
+				}
+
+				if cerr.BadStatusError.HttpCode != expectedhttpStatus {
+					t.Errorf("Returned http status code for bad status error: got %d want %d",
+						cerr.BadStatusError.HttpCode, expectedhttpStatus)
+				}
+
+			} else {
+				t.Errorf("Bad status error is %v", cerr.BadStatusError)
+			}
+		} else {
+			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
+		}
+	}
 }

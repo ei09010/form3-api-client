@@ -20,7 +20,7 @@ const (
 	FinalUrlParsingError     = iota
 	BuildingRequestError     = iota
 	ExecutingRequestError    = iota
-	ResponseError            = iota
+	ResponseReadError        = iota
 )
 
 type BadStatusError struct {
@@ -50,7 +50,7 @@ func (c *ClientError) Error() string {
 }
 
 func (b *BadStatusError) Error() string {
-	return fmt.Sprintf("| Did not get 200 from %s, got %d ", b.URL, b.HttpCode)
+	return fmt.Sprintf(" | Received %d from %s ", b.HttpCode, b.URL)
 }
 
 // arguments

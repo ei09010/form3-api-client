@@ -118,7 +118,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
-			return nil, handleClientError(ResponseError, err.Error())
+			return nil, handleClientError(ResponseReadError, err.Error())
 		}
 
 		httpResponse.Body.Close()
@@ -128,7 +128,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 			err = json.Unmarshal(responseBody, &accountsData)
 
 			if err != nil {
-				handleClientError(UnmarshallingError, err.Error())
+				return nil, handleClientError(UnmarshallingError, err.Error())
 			}
 
 			return &accountsData, nil
@@ -142,11 +142,11 @@ func (c *Client) getRequest() (*AccountData, error) {
 				return nil, handleClientError(UnmarshallingError, err.Error())
 			}
 
-			return nil, handleBadStatusError(HttResponseStandardError, apiHttpError.ErrorMessage, httpResponse.Request.URL.String())
+			return nil, handleBadStatusError(httpResponse.StatusCode, apiHttpError.ErrorMessage, httpResponse.Request.URL.Path)
 		}
 
 	} else {
 
-		return nil, nil
+		return nil, handleClientError(ResponseReadError, err.Error())
 	}
 }
