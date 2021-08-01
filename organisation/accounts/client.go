@@ -20,16 +20,20 @@ type Client struct {
 
 func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
 
-	parsedUrl, err := url.Parse(baseUrl)
+	parsedUrl, err := url.ParseRequestURI(baseUrl)
 
 	if err != nil {
-		return nil, handleError(UrlParsingError, err.Error(), 0)
+		return nil, handleClientError(BaseUrlParsingError, err.Error())
 	}
 
-	finalUrl, err := parsedUrl.Parse("/v1/organisation/accounts")
+	if requestTimeout.Milliseconds() <= 0 {
+		requestTimeout = DefaultTimeOutValue
+	}
+
+	finalUrl, err := parsedUrl.Parse(AccountsPath)
 
 	if err != nil {
-		return nil, handleError(UrlParsingError, err.Error(), 0)
+		return nil, handleClientError(PathParsingError, err.Error())
 	}
 
 	return &Client{
@@ -38,15 +42,27 @@ func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
 	}, nil
 }
 
-func handleError(errorType int, err string, httpErrorCode int) *ClientError {
+func handleClientError(errorType int, err string) *ClientError {
 
 	clientErr := &ClientError{
 		ErrorType:    errorType,
 		ErrorMessage: err,
 	}
 
-	if httpErrorCode != 0 {
-		clientErr.HttpCode = httpErrorCode
+	log.Println(clientErr)
+
+	return clientErr
+}
+
+func handleBadStatusError(httpCode int, errorMessage string, url string) *ClientError {
+
+	clientErr := &ClientError{
+		ErrorType:    HttResponseStandardError,
+		ErrorMessage: errorMessage,
+		BadStatusError: &BadStatusError{
+			HttpCode: httpCode,
+			URL:      url,
+		},
 	}
 
 	log.Println(clientErr)
@@ -64,24 +80,22 @@ func (c *Client) Fetch(accountId uuid.UUID) (*AccountData, error) {
 
 	if err != nil {
 
-		clientErr := handleError(UrlParsingError, err.Error(), 0)
-
-		log.Fatal(clientErr)
+		clientErr := handleClientError(FinalUrlParsingError, err.Error())
 
 		return nil, clientErr
 	}
 
-	return c.getRequest("")
+	return c.getRequest()
 
 }
 
-func (c *Client) getRequest(queryString string) (*AccountData, error) {
+func (c *Client) getRequest() (*AccountData, error) {
 
 	customReq, err := http.NewRequest("GET", c.BaseURL.String(), nil)
 
 	if err != nil {
 
-		return nil, handleError(RequestError, err.Error(), 0)
+		return nil, handleClientError(BuildingRequestError, err.Error())
 	}
 
 	// review headers
@@ -92,7 +106,7 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 
 	if err != nil {
 
-		return nil, handleError(RequestError, err.Error(), 0)
+		return nil, handleClientError(ExecutingRequestError, err.Error())
 	}
 
 	defer httpResponse.Body.Close()
@@ -104,7 +118,7 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
-			return nil, handleError(ResponseError, err.Error(), 0)
+			return nil, handleClientError(ResponseError, err.Error())
 		}
 
 		httpResponse.Body.Close()
@@ -114,7 +128,7 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 			err = json.Unmarshal(responseBody, &accountsData)
 
 			if err != nil {
-				handleError(UnmarshallingError, err.Error(), 0)
+				handleClientError(UnmarshallingError, err.Error())
 			}
 
 			return &accountsData, nil
@@ -125,10 +139,10 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 			err = json.Unmarshal(responseBody, apiHttpError)
 
 			if err != nil {
-				return nil, handleError(UnmarshallingError, err.Error(), httpResponse.StatusCode)
+				return nil, handleClientError(UnmarshallingError, err.Error())
 			}
 
-			return nil, handleError(HttResponseStandardError, apiHttpError.ErrorMessage, httpResponse.StatusCode)
+			return nil, handleBadStatusError(HttResponseStandardError, apiHttpError.ErrorMessage, httpResponse.Request.URL.String())
 		}
 
 	} else {

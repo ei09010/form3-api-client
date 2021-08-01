@@ -3,44 +3,56 @@ package accounts
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
-// errrors
+const (
+	AccountsPath        = "/v1/organisation/accounts"
+	DefaultTimeOutValue = time.Duration(10000 * time.Millisecond)
+)
 
-// arguments
-type AccountsCreationArg struct {
-}
-
+// Error Standard Types
 const (
 	HttResponseStandardError = iota
 	UnmarshallingError       = iota
-	UrlParsingError          = iota
-	RequestError             = iota
+	BaseUrlParsingError      = iota
+	PathParsingError         = iota
+	FinalUrlParsingError     = iota
+	BuildingRequestError     = iota
+	ExecutingRequestError    = iota
 	ResponseError            = iota
 )
 
-type ApiHttpError struct {
-	ErrorMessage string `json:"error_message"`
+type BadStatusError struct {
+	HttpCode int
+	URL      string
 }
 
 type ClientError struct {
-	ErrorType    int
-	HttpCode     int
-	ErrorMessage string
+	ErrorType      int
+	ErrorMessage   string
+	BadStatusError *BadStatusError
 }
 
-func (hError *ClientError) Error() string {
+func (c *ClientError) Error() string {
 
 	var sb strings.Builder
 
-	baseErrorMessage := fmt.Sprintf("Type: %d | Message: %s", hError.ErrorType, hError.ErrorMessage)
+	baseErrorMessage := fmt.Sprintf("Type: %d | %s", c.ErrorType, c.ErrorMessage)
 
 	sb.WriteString(baseErrorMessage)
 
-	if hError.HttpCode != 0 {
-		sb.WriteString(fmt.Sprintf("| Code: %d", hError.HttpCode))
+	if c.BadStatusError != nil {
+		sb.WriteString(c.BadStatusError.Error())
 	}
 
 	return fmt.Sprint(sb.String())
+}
 
+func (b *BadStatusError) Error() string {
+	return fmt.Sprintf("| Did not get 200 from %s, got %d ", b.URL, b.HttpCode)
+}
+
+// arguments
+type AccountsCreationArg struct {
 }
