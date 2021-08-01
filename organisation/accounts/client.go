@@ -8,27 +8,34 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 type Client struct {
 	BaseURL    *url.URL
-	UserAgent  string
-	ApiKey     string
 	HttpClient *http.Client
 }
 
-func NewClient(baseUrl string) *Client {
+func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
 
-	parsedUrl, _ := url.Parse(baseUrl)
+	parsedUrl, err := url.Parse(baseUrl)
 
-	parsedUrl.Path = path.Join(parsedUrl.Path, "v1/organisation/accounts")
+	if err != nil {
+		return nil, handleError(UrlParsingError, err.Error(), 0)
+	}
+
+	finalUrl, err := parsedUrl.Parse("/v1/organisation/accounts")
+
+	if err != nil {
+		return nil, handleError(UrlParsingError, err.Error(), 0)
+	}
 
 	return &Client{
-		BaseURL:    parsedUrl,
-		HttpClient: &http.Client{},
-	}
+		BaseURL:    finalUrl,
+		HttpClient: &http.Client{Timeout: requestTimeout},
+	}, nil
 }
 
 func handleError(errorType int, err string, httpErrorCode int) *ClientError {
@@ -53,7 +60,7 @@ func (c *Client) Fetch(accountId uuid.UUID) (*AccountData, error) {
 
 	c.BaseURL.Path = path.Join(c.BaseURL.Path, fmt.Sprintf("/%s", accountId.String()))
 
-	c.BaseURL, err = url.Parse(c.BaseURL.Path)
+	c.BaseURL, err = c.BaseURL.Parse(c.BaseURL.Path)
 
 	if err != nil {
 
@@ -78,7 +85,7 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 	}
 
 	// review headers
-	customReq.Header.Set("content-encoding", "application/json")
+	customReq.Header.Set("content-encoding", "application/json; charset=utf-8")
 	customReq.Header.Set("user-agent", "golang-sdk")
 
 	httpResponse, err := c.HttpClient.Do(customReq)
@@ -94,17 +101,17 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 
 	if httpResponse != nil {
 
-		myResponse, err := ioutil.ReadAll(httpResponse.Body)
+		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
-			return nil, err
+			return nil, handleError(ResponseError, err.Error(), 0)
 		}
 
 		httpResponse.Body.Close()
 
 		if httpResponse.StatusCode == http.StatusOK {
 
-			err = json.Unmarshal(myResponse, &accountsData)
+			err = json.Unmarshal(responseBody, &accountsData)
 
 			if err != nil {
 				handleError(UnmarshallingError, err.Error(), 0)
@@ -115,7 +122,7 @@ func (c *Client) getRequest(queryString string) (*AccountData, error) {
 
 			apiHttpError := &ApiHttpError{}
 
-			err = json.Unmarshal(myResponse, apiHttpError)
+			err = json.Unmarshal(responseBody, apiHttpError)
 
 			if err != nil {
 				return nil, handleError(UnmarshallingError, err.Error(), httpResponse.StatusCode)

@@ -16,6 +16,7 @@ const (
 	UnmarshallingError       = iota
 	UrlParsingError          = iota
 	RequestError             = iota
+	ResponseError            = iota
 )
 
 type ApiHttpError struct {
