@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -25,22 +27,30 @@ func (c *Client) Delete(accountId uuid.UUID, version int) error {
 		return clientErr
 	}
 
-	return c.deleteRequest()
+	return c.deleteRequest(map[string]string{"version": strconv.Itoa(version)})
 
 }
 
-func (c *Client) deleteRequest() error {
+func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 	customReq, err := http.NewRequest("DELETE", c.BaseURL.String(), nil)
+
+	q := customReq.URL.Query()
+
+	for k, v := range queryStringParam {
+		q.Add(k, v)
+	}
+
+	customReq.URL.RawQuery = q.Encode()
 
 	if err != nil {
 
 		return handleClientError(BuildingRequestError, err.Error())
 	}
 
-	// review headers
-	customReq.Header.Set("content-encoding", "application/json")
 	customReq.Header.Set("user-agent", "golang-sdk")
+
+	customReq.URL.Path = strings.Join([]string{customReq.URL.Path, customReq.URL.RawQuery}, "?")
 
 	httpResponse, err := c.HttpClient.Do(customReq)
 
