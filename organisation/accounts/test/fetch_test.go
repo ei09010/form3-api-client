@@ -1,6 +1,7 @@
-package accounts
+package accounts_test
 
 import (
+	"ei09010/form3-api-client/organisation/accounts"
 	"io"
 	"net/http"
 	"testing"
@@ -39,7 +40,7 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 	expectedVersion := 0
 	expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -146,7 +147,7 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 
 	expectedErrorMessage := "record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"
-	expectedErrorType := HttResponseStandardError
+	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusNotFound
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +157,7 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -181,7 +182,7 @@ func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing
 	// Arrange
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 
-	expectedErrorType := UnmarshallingError
+	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "unexpected end of JSON input"
 
 	expectedhttpStatus := http.StatusInternalServerError
@@ -192,7 +193,7 @@ func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -217,7 +218,7 @@ func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testi
 	// Arrange
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 
-	expectedErrorType := UnmarshallingError
+	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "unexpected end of JSON input"
 
 	expectedhttpStatus := http.StatusOK
@@ -228,7 +229,7 @@ func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testi
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -254,7 +255,7 @@ func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t 
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 	expectedResponseInvalidJson := `{"data":unt_classion":"Personal222","native_names":["Alternative Names."],"ban":"400300","bank_id_code":"G","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`
 
-	expectedErrorType := UnmarshallingError
+	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "invalid character 'u' looking for beginning of value"
 
 	expectedhttpStatus := http.StatusOK
@@ -266,7 +267,7 @@ func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t 
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())

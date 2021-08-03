@@ -52,7 +52,3 @@ func (c *ClientError) Error() string {
 func (b *BadStatusError) Error() string {
 	return fmt.Sprintf(" | Received %d from %s ", b.HttpCode, b.URL)
 }
-
-// arguments
-type AccountsCreationArg struct {
-}

@@ -1,6 +1,7 @@
-package accounts
+package accounts_test
 
 import (
+	"ei09010/form3-api-client/organisation/accounts"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,7 +27,7 @@ func TestNewClient_validUrl_returnsValidClient(t *testing.T) {
 
 	// Act
 
-	accountClient, err := NewClient(validUrl, time.Duration(expectedTimeoutClient))
+	accountClient, err := accounts.NewClient(validUrl, time.Duration(expectedTimeoutClient))
 
 	if err != nil {
 		t.Errorf("Returned reponse: got %v want %v",
@@ -64,11 +65,11 @@ func TestNewClient_validUrlAndDefaultTimeoutValue_returnsValidClientWithDefaultT
 	expectedPath := "/v1/organisation/accounts"
 	expectedHost := "localhost:8080"
 	zeroValueTimeout := time.Duration(0)
-	expectedDefaultTimeoutValue := DefaultTimeOutValue
+	expectedDefaultTimeoutValue := accounts.DefaultTimeOutValue
 
 	// Act
 
-	accountClient, err := NewClient(validUrl, zeroValueTimeout)
+	accountClient, err := accounts.NewClient(validUrl, zeroValueTimeout)
 
 	if err != nil {
 		t.Errorf("Returned reponse: got %v want %v",
@@ -104,11 +105,11 @@ func TestNewClient_emptyBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 
 	expectedErrorMessage := `parse "": empty url`
 
-	expectedErrorType := BaseUrlParsingError
+	expectedErrorType := accounts.BaseUrlParsingError
 
 	// Act
 
-	accountClient, err := NewClient("", time.Duration(1*time.Millisecond))
+	accountClient, err := accounts.NewClient("", time.Duration(1*time.Millisecond))
 
 	// Assert
 
@@ -127,11 +128,11 @@ func TestNewClient_invalidBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 
 	expectedErrorMessage := `parse "wrongURL": invalid URI for request`
 
-	expectedErrorType := BaseUrlParsingError
+	expectedErrorType := accounts.BaseUrlParsingError
 
 	// Act
 
-	accountClient, err := NewClient("wrongURL", time.Duration(1*time.Millisecond))
+	accountClient, err := accounts.NewClient("wrongURL", time.Duration(1*time.Millisecond))
 
 	// Assert
 
@@ -152,11 +153,11 @@ func TestNewClient_invalidTimeoutValue_returnsValidClientWithDefaultValue(t *tes
 	expectedPath := "/v1/organisation/accounts"
 	expectedHost := "localhost:8080"
 	invalidValueTimeout := time.Duration(-1 * time.Millisecond)
-	expectedDefaultTimeoutValue := DefaultTimeOutValue
+	expectedDefaultTimeoutValue := accounts.DefaultTimeOutValue
 
 	// Act
 
-	accountClient, err := NewClient(validUrl, invalidValueTimeout)
+	accountClient, err := accounts.NewClient(validUrl, invalidValueTimeout)
 
 	if err != nil {
 		t.Errorf("Returned reponse: got %v want %v",
@@ -194,11 +195,11 @@ func TestNewClient_invalidTimeoutValueInNanoSeconds_returnsValidClientWithDefaul
 	expectedPath := "/v1/organisation/accounts"
 	expectedHost := "localhost:8080"
 	invalidValueTimeout := time.Duration(50 * time.Nanosecond)
-	expectedDefaultTimeoutValue := DefaultTimeOutValue
+	expectedDefaultTimeoutValue := accounts.DefaultTimeOutValue
 
 	// Act
 
-	accountClient, err := NewClient(validUrl, invalidValueTimeout)
+	accountClient, err := accounts.NewClient(validUrl, invalidValueTimeout)
 
 	if err != nil {
 		t.Errorf("Returned reponse: got %v want %v",
@@ -234,11 +235,11 @@ func TestNewClient_invalidBaseUrlAndinvalidTimeout_returnsBaseUrlParsingError(t 
 
 	expectedErrorMessage := `parse "wrongURL": invalid URI for request`
 
-	expectedErrorType := BaseUrlParsingError
+	expectedErrorType := accounts.BaseUrlParsingError
 
 	// Act
 
-	accountClient, err := NewClient("wrongURL", time.Duration(-1*time.Millisecond))
+	accountClient, err := accounts.NewClient("wrongURL", time.Duration(-1*time.Millisecond))
 
 	// Assert
 
@@ -274,7 +275,7 @@ func equal(a, b []string) bool {
 
 func assertClientError(err error, expectedErrorMessage string, t *testing.T, expectedErrorType int) {
 	if err != nil {
-		if cerr, ok := err.(*ClientError); ok {
+		if cerr, ok := err.(*accounts.ClientError); ok {
 
 			if cerr.ErrorMessage != expectedErrorMessage {
 				t.Errorf("Returned error message: got %s want %s",
@@ -292,7 +293,7 @@ func assertClientError(err error, expectedErrorMessage string, t *testing.T, exp
 			}
 
 		} else {
-			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
+			t.Errorf("returned error isn't a %T, got %T", err.(*accounts.ClientError), err)
 		}
 
 	}
@@ -300,7 +301,7 @@ func assertClientError(err error, expectedErrorMessage string, t *testing.T, exp
 
 func assertBadStatusError(err error, expectedErrorMessage string, t *testing.T, expectedErrorType int, expectedCorrectRequest string, expectedhttpStatus int) {
 	if err != nil {
-		if cerr, ok := err.(*ClientError); ok {
+		if cerr, ok := err.(*accounts.ClientError); ok {
 
 			if cerr.ErrorMessage != expectedErrorMessage {
 				t.Errorf("Returned error message: got %s want %s",
@@ -328,7 +329,7 @@ func assertBadStatusError(err error, expectedErrorMessage string, t *testing.T, 
 				t.Errorf("Bad status error is %v", cerr.BadStatusError)
 			}
 		} else {
-			t.Errorf("returned error isn't a %T, got %T", err.(*ClientError), err)
+			t.Errorf("returned error isn't a %T, got %T", err.(*accounts.ClientError), err)
 		}
 	}
 }

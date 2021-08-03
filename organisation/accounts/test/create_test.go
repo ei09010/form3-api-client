@@ -1,6 +1,7 @@
-package accounts
+package accounts_test
 
 import (
+	"ei09010/form3-api-client/organisation/accounts"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -62,15 +63,15 @@ func TestCreate_validAccountData_returnsStoredAccountsData(t *testing.T) {
 	expectedVersion := 0
 	expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 
-	accountClient, err := NewClient(ts.URL, time.Duration(1000*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(1000*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	accountDataToCreate := &AccountData{
-		Data: &Data{
-			Attributes: &AccountAttributes{
+	accountDataToCreate := &accounts.AccountData{
+		Data: &accounts.Data{
+			Attributes: &accounts.AccountAttributes{
 				AccountClassification: expectedAccountClassification,
 				AlternativeNames:      expectedAlternativeNames,
 				BankID:                expectedBankId,
@@ -87,7 +88,7 @@ func TestCreate_validAccountData_returnsStoredAccountsData(t *testing.T) {
 			Type:           expectedType,
 			Version:        expectedVersion,
 		},
-		Links: &Links{
+		Links: &accounts.Links{
 			Self: expectedSelf,
 		},
 	}
@@ -193,7 +194,7 @@ func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "Account cannot be created as it violates a duplicate constraint"
-	expectedErrorType := HttResponseStandardError
+	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusConflict
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +204,7 @@ func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -233,7 +234,7 @@ func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body is required"
-	expectedErrorType := HttResponseStandardError
+	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusBadRequest
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +244,7 @@ func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -275,7 +276,7 @@ func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body must be of type uuid: \"grgrghrgr\""
-	expectedErrorType := HttResponseStandardError
+	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusBadRequest
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -285,7 +286,7 @@ func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -314,7 +315,7 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 	// Arrange
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
-	expectedErrorType := UnmarshallingError
+	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "unexpected end of JSON input"
 
 	expectedhttpStatus := http.StatusInternalServerError
@@ -325,7 +326,7 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 
 	defer ts.Close()
 
-	accountClient, err := NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -333,7 +334,7 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 
 	// Act
 
-	response, err := accountClient.Create(&AccountData{})
+	response, err := accountClient.Create(&accounts.AccountData{})
 
 	// Assert
 
@@ -345,7 +346,7 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
 }
 
-func generateValidGenericAccountData() *AccountData {
+func generateValidGenericAccountData() *accounts.AccountData {
 
 	expectedAccountClassification := "Personal"
 	expectedAlternativeNames := []string{"Alternative Names."}
@@ -370,9 +371,9 @@ func generateValidGenericAccountData() *AccountData {
 	expectedVersion := 0
 	expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 
-	return &AccountData{
-		Data: &Data{
-			Attributes: &AccountAttributes{
+	return &accounts.AccountData{
+		Data: &accounts.Data{
+			Attributes: &accounts.AccountAttributes{
 				AccountClassification: expectedAccountClassification,
 				AlternativeNames:      expectedAlternativeNames,
 				BankID:                expectedBankId,
@@ -389,7 +390,7 @@ func generateValidGenericAccountData() *AccountData {
 			Type:           expectedType,
 			Version:        expectedVersion,
 		},
-		Links: &Links{
+		Links: &accounts.Links{
 			Self: expectedSelf,
 		},
 	}
