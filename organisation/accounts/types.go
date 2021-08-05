@@ -1,8 +1,7 @@
 package accounts
 
 import (
-	"fmt"
-	"strings"
+	"errors"
 	"time"
 )
 
@@ -12,43 +11,13 @@ const (
 )
 
 // Error Standard Types
-const (
-	HttResponseStandardError = iota
-	UnmarshallingError       = iota
-	BaseUrlParsingError      = iota
-	PathParsingError         = iota
-	FinalUrlParsingError     = iota
-	BuildingRequestError     = iota
-	ExecutingRequestError    = iota
-	ResponseReadError        = iota
+var (
+	ApiHttpErrorType      = errors.New("API Error")
+	UnmarshallingError    = errors.New("UnmarshallingError")
+	BaseUrlParsingError   = errors.New("BaseUrlParsingError")
+	PathParsingError      = errors.New("PathParsingError")
+	FinalUrlParsingError  = errors.New("FinalUrlParsingError")
+	BuildingRequestError  = errors.New("BuildingRequestError")
+	ExecutingRequestError = errors.New("ExecutingRequestError")
+	ResponseReadError     = errors.New("ResponseReadError")
 )
-
-type BadStatusError struct {
-	HttpCode int
-	URL      string
-}
-
-type ClientError struct {
-	ErrorType      int
-	ErrorMessage   string
-	BadStatusError *BadStatusError
-}
-
-func (c *ClientError) Error() string {
-
-	var sb strings.Builder
-
-	baseErrorMessage := fmt.Sprintf("Type: %d | %s", c.ErrorType, c.ErrorMessage)
-
-	sb.WriteString(baseErrorMessage)
-
-	if c.BadStatusError != nil {
-		sb.WriteString(c.BadStatusError.Error())
-	}
-
-	return fmt.Sprint(sb.String())
-}
-
-func (b *BadStatusError) Error() string {
-	return fmt.Sprintf(" | Received %d from %s ", b.HttpCode, b.URL)
-}

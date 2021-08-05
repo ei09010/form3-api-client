@@ -18,8 +18,6 @@ func TestCreate_validAccountData_returnsStoredAccountsData(t *testing.T) {
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
 
-		// validate request body
-
 		bodyBytes, err := ioutil.ReadAll(r.Body)
 
 		receivedBody := string(bodyBytes)
@@ -194,7 +192,6 @@ func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "Account cannot be created as it violates a duplicate constraint"
-	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusConflict
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -223,7 +220,7 @@ func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedErrorType, expectedCorrectRequest, expectedhttpStatus)
+	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
 }
 
 func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
@@ -234,7 +231,6 @@ func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body is required"
-	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusBadRequest
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -265,7 +261,7 @@ func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedErrorType, expectedCorrectRequest, expectedhttpStatus)
+	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
 }
 
 func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T) {
@@ -276,7 +272,6 @@ func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body must be of type uuid: \"grgrghrgr\""
-	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusBadRequest
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +302,7 @@ func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedErrorType, expectedCorrectRequest, expectedhttpStatus)
+	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
 }
 
 func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
@@ -343,7 +338,7 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 			response, nil)
 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
 }
 
 func generateValidGenericAccountData() *accounts.AccountData {

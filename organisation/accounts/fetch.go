@@ -20,7 +20,7 @@ func (c *Client) Fetch(accountId uuid.UUID) (*AccountData, error) {
 
 	if err != nil {
 
-		clientErr := handleClientError(FinalUrlParsingError, err.Error())
+		clientErr := fmt.Errorf("%w | %s", FinalUrlParsingError, err.Error()) //handleClientError(FinalUrlParsingError, err.Error())
 
 		return nil, clientErr
 	}
@@ -35,7 +35,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 
 	if err != nil {
 
-		return nil, handleClientError(BuildingRequestError, err.Error())
+		return nil, fmt.Errorf("%w | %s", BuildingRequestError, err.Error()) //handleClientError(BuildingRequestError, err.Error())
 	}
 
 	// review headers
@@ -46,7 +46,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 
 	if err != nil {
 
-		return nil, handleClientError(ExecutingRequestError, err.Error())
+		return nil, fmt.Errorf("%w |  %s", ExecutingRequestError, err.Error()) //handleClientError(ExecutingRequestError, err.Error())
 	}
 
 	defer httpResponse.Body.Close()
@@ -58,7 +58,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
-			return nil, handleClientError(ResponseReadError, err.Error())
+			return nil, fmt.Errorf("%w | %s", ResponseReadError, err.Error()) //handleClientError(ResponseReadError, err.Error())
 		}
 
 		httpResponse.Body.Close()
@@ -68,7 +68,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 			err = json.Unmarshal(responseBody, &accountsData)
 
 			if err != nil {
-				return nil, handleClientError(UnmarshallingError, err.Error())
+				return nil, fmt.Errorf("%w | %s", UnmarshallingError, err.Error()) // handleClientError(UnmarshallingError, err.Error())
 			}
 
 			return &accountsData, nil
@@ -79,14 +79,14 @@ func (c *Client) getRequest() (*AccountData, error) {
 			err = json.Unmarshal(responseBody, apiHttpError)
 
 			if err != nil {
-				return nil, handleClientError(UnmarshallingError, err.Error())
+				return nil, fmt.Errorf(err.Error(), UnmarshallingError)
 			}
 
-			return nil, handleBadStatusError(httpResponse.StatusCode, apiHttpError.ErrorMessage, httpResponse.Request.URL.Path)
+			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage) //handleBadStatusError(httpResponse.StatusCode, apiHttpError.ErrorMessage, httpResponse.Request.URL.Path)
 		}
 
 	} else {
 
-		return nil, handleClientError(ResponseReadError, err.Error())
+		return nil, fmt.Errorf("%w | %s", ResponseReadError, err.Error()) //handleClientError(ResponseReadError, err.Error())
 	}
 }

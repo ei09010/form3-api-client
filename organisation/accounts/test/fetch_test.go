@@ -147,7 +147,6 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 
 	expectedErrorMessage := "record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"
-	expectedErrorType := accounts.HttResponseStandardError
 	expectedhttpStatus := http.StatusNotFound
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
@@ -167,14 +166,12 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 
 	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
 
-	// Assert
-
 	if response != nil {
 		t.Errorf("Returned reponse: got %v want %v",
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedErrorType, expectedCorrectRequest, expectedhttpStatus)
+	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
 }
 
 func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
@@ -210,7 +207,7 @@ func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing
 			response, nil)
 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
 }
 
 func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
@@ -246,7 +243,7 @@ func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testi
 			response, nil)
 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
 }
 
 func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
@@ -284,5 +281,8 @@ func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t 
 			response, nil)
 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
 }
+
+// add tests:
+// - 404 with un expected error message
