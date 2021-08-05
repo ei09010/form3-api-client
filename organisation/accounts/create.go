@@ -33,7 +33,7 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 
 	postBody := bytes.NewBuffer(accountDataStr)
 
-	customReq, err := http.NewRequest("POST", c.BaseURL.String(), postBody)
+	customReq, err := http.NewRequest(http.MethodPost, c.BaseURL.String(), postBody)
 
 	if err != nil {
 

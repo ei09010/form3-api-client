@@ -49,9 +49,9 @@ func TestNewClient_validUrl_returnsValidClient(t *testing.T) {
 			accountClient.BaseURL.Scheme, expectedScheme)
 	}
 
-	if accountClient.HttpClient.Timeout != expectedTimeoutClient {
+	if accountClient.Timeout != expectedTimeoutClient {
 		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.HttpClient.Timeout, expectedTimeoutClient)
+			accountClient.Timeout, expectedTimeoutClient)
 	}
 }
 
@@ -91,9 +91,9 @@ func TestNewClient_validUrlAndDefaultTimeoutValue_returnsValidClientWithDefaultT
 			accountClient.BaseURL.Scheme, expectedScheme)
 	}
 
-	if accountClient.HttpClient.Timeout != expectedDefaultTimeoutValue {
+	if accountClient.Timeout != expectedDefaultTimeoutValue {
 		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.HttpClient.Timeout, expectedDefaultTimeoutValue)
+			accountClient.Timeout, expectedDefaultTimeoutValue)
 	}
 }
 
@@ -187,9 +187,9 @@ func TestNewClient_invalidTimeoutValue_returnsValidClientWithDefaultValue(t *tes
 			accountClient.BaseURL.Scheme, expectedScheme)
 	}
 
-	if accountClient.HttpClient.Timeout != expectedDefaultTimeoutValue {
+	if accountClient.Timeout != expectedDefaultTimeoutValue {
 		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.HttpClient.Timeout, expectedDefaultTimeoutValue)
+			accountClient.Timeout, expectedDefaultTimeoutValue)
 	}
 }
 
@@ -229,9 +229,9 @@ func TestNewClient_invalidTimeoutValueInNanoSeconds_returnsValidClientWithDefaul
 			accountClient.BaseURL.Scheme, expectedScheme)
 	}
 
-	if accountClient.HttpClient.Timeout != expectedDefaultTimeoutValue {
+	if accountClient.Timeout != expectedDefaultTimeoutValue {
 		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.HttpClient.Timeout, expectedDefaultTimeoutValue)
+			accountClient.Timeout, expectedDefaultTimeoutValue)
 	}
 }
 

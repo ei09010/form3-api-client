@@ -9,7 +9,10 @@ import (
 
 type Client struct {
 	BaseURL    *url.URL
-	HttpClient *http.Client
+	Timeout    time.Duration
+	HttpClient interface {
+		Do(req *http.Request) (*http.Response, error)
+	}
 }
 
 func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
@@ -32,6 +35,19 @@ func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
 
 	return &Client{
 		BaseURL:    finalUrl,
+		Timeout:    requestTimeout,
 		HttpClient: &http.Client{Timeout: requestTimeout},
 	}, nil
+}
+
+func (c *Client) do(req *http.Request) (*http.Response, error) {
+	httpClient := c.HttpClient
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: c.Timeout}
+	}
+
+	req.Header.Set("content-encoding", "application/json; charset=utf-8")
+	req.Header.Set("user-agent", "golang-sdk")
+
+	return httpClient.Do(req)
 }

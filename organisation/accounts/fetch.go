@@ -29,15 +29,12 @@ func (c *Client) Fetch(accountId uuid.UUID) (*AccountData, error) {
 
 func (c *Client) getRequest() (*AccountData, error) {
 
-	customReq, err := http.NewRequest("GET", c.BaseURL.String(), nil)
+	customReq, err := http.NewRequest(http.MethodGet, c.BaseURL.String(), nil)
 
 	if err != nil {
 
 		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
-
-	customReq.Header.Set("content-encoding", "application/json; charset=utf-8")
-	customReq.Header.Set("user-agent", "golang-sdk")
 
 	httpResponse, err := c.HttpClient.Do(customReq)
 

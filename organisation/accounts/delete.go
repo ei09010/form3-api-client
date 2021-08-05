@@ -31,7 +31,7 @@ func (c *Client) Delete(accountId uuid.UUID, version int) error {
 
 func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
-	customReq, err := http.NewRequest("DELETE", c.BaseURL.String(), nil)
+	customReq, err := http.NewRequest(http.MethodDelete, c.BaseURL.String(), nil)
 
 	q := customReq.URL.Query()
 
@@ -45,8 +45,6 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
-
-	customReq.Header.Set("user-agent", "golang-sdk")
 
 	customReq.URL.Path = strings.Join([]string{customReq.URL.Path, customReq.URL.RawQuery}, "?")
 

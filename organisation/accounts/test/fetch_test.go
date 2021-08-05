@@ -1,14 +1,26 @@
 package accounts_test
 
 import (
+	"bytes"
 	"ei09010/form3-api-client/organisation/accounts"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type MockHttpClient struct {
+	DoFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (mckHt *MockHttpClient) Do(req *http.Request) (*http.Response, error) {
+
+	return mckHt.DoFunc(req)
+}
 
 func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
@@ -150,22 +162,26 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 	expectedHttpStatus := http.StatusNotFound
 	expectedErrorType := accounts.ApiHttpErrorType
 
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-		io.WriteString(w, expectedErrorMessageResponse)
-	})
+	r := ioutil.NopCloser(bytes.NewReader([]byte(expectedErrorMessageResponse)))
 
-	defer ts.Close()
+	accountErrClient := &MockHttpClient{
+		DoFunc: func(*http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: expectedHttpStatus,
+				Request:    &http.Request{URL: &url.URL{Path: expectedCorrectRequest}},
+				Body:       r,
+			}, nil
+		},
+	}
 
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-	if err != nil {
-		t.Errorf(err.Error())
+	accountsClient := &accounts.Client{
+		BaseURL:    &url.URL{Path: expectedCorrectRequest},
+		HttpClient: accountErrClient,
 	}
 
 	// Act
 
-	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+	response, err := accountsClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
 
 	if response != nil {
 		t.Errorf("Returned reponse: got %v want %v",
