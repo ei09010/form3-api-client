@@ -147,10 +147,11 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
 
 	expectedErrorMessage := "record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"
-	expectedhttpStatus := http.StatusNotFound
+	expectedHttpStatus := http.StatusNotFound
+	expectedErrorType := accounts.ApiHttpErrorType
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 		io.WriteString(w, expectedErrorMessageResponse)
 	})
 
@@ -171,7 +172,7 @@ func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
@@ -182,10 +183,10 @@ func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing
 	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "unexpected end of JSON input"
 
-	expectedhttpStatus := http.StatusInternalServerError
+	expectedHttpStatus := http.StatusInternalServerError
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 	})
 
 	defer ts.Close()
@@ -207,7 +208,7 @@ func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing
 			response, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
@@ -218,10 +219,10 @@ func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testi
 	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "unexpected end of JSON input"
 
-	expectedhttpStatus := http.StatusOK
+	expectedHttpStatus := http.StatusBadRequest
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 	})
 
 	defer ts.Close()
@@ -243,7 +244,7 @@ func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testi
 			response, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
@@ -255,10 +256,10 @@ func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t 
 	expectedErrorType := accounts.UnmarshallingError
 	expectedErrorMessage := "invalid character 'u' looking for beginning of value"
 
-	expectedhttpStatus := http.StatusOK
+	expectedHttpStatus := http.StatusOK
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 		io.WriteString(w, expectedResponseInvalidJson)
 	})
 
@@ -281,7 +282,7 @@ func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t 
 			response, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 // add tests:

@@ -22,9 +22,7 @@ func (c *Client) Delete(accountId uuid.UUID, version int) error {
 
 	if err != nil {
 
-		clientErr := fmt.Errorf("%w | %s", FinalUrlParsingError, err.Error()) // handleClientError(FinalUrlParsingError, err.Error())
-
-		return clientErr
+		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	return c.deleteRequest(map[string]string{"version": strconv.Itoa(version)})
@@ -45,7 +43,7 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 	if err != nil {
 
-		return fmt.Errorf("%w | %s", BuildingRequestError, err.Error()) // handleClientError(BuildingRequestError, err.Error())
+		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	customReq.Header.Set("user-agent", "golang-sdk")
@@ -56,7 +54,7 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 	if err != nil {
 
-		return fmt.Errorf("%w | %s", ExecutingRequestError, err.Error()) // handleClientError(ExecutingRequestError, err.Error())
+		return fmt.Errorf("%w | Path: %s returned %d with message %s", ExecutingRequestError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 	}
 
 	defer httpResponse.Body.Close()
@@ -66,7 +64,7 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
-			return fmt.Errorf("%w | %s", ResponseReadError, err.Error()) // handleClientError(ResponseReadError, err.Error())
+			return fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 		}
 
 		httpResponse.Body.Close()
@@ -77,13 +75,12 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 		} else {
 
-			fmt.Printf("http repsonse body: %s", responseBody)
 			apiHttpError := &ApiHttpError{}
 
 			err = json.Unmarshal(responseBody, apiHttpError)
 
 			if err != nil {
-				return fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage) //handleBadStatusError(httpResponse.StatusCode, string(responseBody), httpResponse.Request.URL.Path)
+				return fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
 			}
 
 			return fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
@@ -91,6 +88,6 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 	} else {
 
-		return fmt.Errorf("%w | %s", ResponseReadError, err.Error())
+		return fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 	}
 }

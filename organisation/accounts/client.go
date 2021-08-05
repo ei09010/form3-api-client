@@ -17,7 +17,7 @@ func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
 	parsedUrl, err := url.ParseRequestURI(baseUrl)
 
 	if err != nil {
-		return nil, fmt.Errorf("%w | %s", BaseUrlParsingError, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BaseUrlParsingError, baseUrl, http.StatusBadRequest, err.Error())
 	}
 
 	if requestTimeout.Milliseconds() <= 0 {
@@ -27,7 +27,7 @@ func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
 	finalUrl, err := parsedUrl.Parse(AccountsPath)
 
 	if err != nil {
-		return nil, fmt.Errorf("%w | %s", PathParsingError, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", PathParsingError, AccountsPath, http.StatusBadRequest, err.Error())
 	}
 
 	return &Client{

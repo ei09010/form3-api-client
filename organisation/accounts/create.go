@@ -16,9 +16,7 @@ func (c *Client) Create(accountData *AccountData) (*AccountData, error) {
 
 	if err != nil {
 
-		//clientErr := handleClientError(FinalUrlParsingError, err.Error())
-
-		return nil, fmt.Errorf("%w | %s", FinalUrlParsingError, err.Error()) //clientErr
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	return c.postRequest(accountData)
@@ -30,7 +28,7 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 	accountDataStr, err := json.Marshal(accountData)
 
 	if err != nil {
-		return nil, fmt.Errorf("%w | %s", BuildingRequestError, err.Error()) //handleClientError(BuildingRequestError, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	postBody := bytes.NewBuffer(accountDataStr)
@@ -39,10 +37,9 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 
 	if err != nil {
 
-		return nil, fmt.Errorf("%w | %s", BuildingRequestError, err.Error()) //handleClientError(BuildingRequestError, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
-	// review headers
 	customReq.Header.Set("content-encoding", "application/json")
 	customReq.Header.Set("user-agent", "golang-sdk")
 
@@ -50,7 +47,7 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 
 	if err != nil {
 
-		return nil, fmt.Errorf("%w | %s", ExecutingRequestError, err.Error()) //handleClientError(ExecutingRequestError, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ExecutingRequestError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 	}
 
 	defer httpResponse.Body.Close()
@@ -62,7 +59,7 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
-			return nil, fmt.Errorf("%w | %s", ResponseReadError, err.Error()) // handleClientError(ResponseReadError, err.Error())
+			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 		}
 
 		httpResponse.Body.Close()
@@ -72,7 +69,7 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 			err = json.Unmarshal(responseBody, &accountsData)
 
 			if err != nil {
-				return nil, fmt.Errorf("%w | %s", UnmarshallingError, err.Error()) // handleClientError(UnmarshallingError, err.Error())
+				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 			}
 
 			return &accountsData, nil
@@ -83,14 +80,14 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 			err = json.Unmarshal(responseBody, apiHttpError)
 
 			if err != nil {
-				return nil, fmt.Errorf("%w | %s", UnmarshallingError, err.Error()) // handleClientError(UnmarshallingError, err.Error())
+				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
 			}
 
-			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage) //handleBadStatusError(httpResponse.StatusCode, apiHttpError.ErrorMessage, httpResponse.Request.URL.Path)
+			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
 		}
 
 	} else {
 
-		return nil, fmt.Errorf("%w | %s", ResponseReadError, err.Error()) //handleClientError(ResponseReadError, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 	}
 }

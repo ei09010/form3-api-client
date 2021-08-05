@@ -16,7 +16,6 @@ var (
 	UnmarshallingError    = errors.New("UnmarshallingError")
 	BaseUrlParsingError   = errors.New("BaseUrlParsingError")
 	PathParsingError      = errors.New("PathParsingError")
-	FinalUrlParsingError  = errors.New("FinalUrlParsingError")
 	BuildingRequestError  = errors.New("BuildingRequestError")
 	ExecutingRequestError = errors.New("ExecutingRequestError")
 	ResponseReadError     = errors.New("ResponseReadError")

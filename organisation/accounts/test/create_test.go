@@ -190,12 +190,13 @@ func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing
 
 	expectedErrorMessageResponse := `{"error_message":"Account cannot be created as it violates a duplicate constraint"}`
 	expectedCorrectRequest := `/v1/organisation/accounts`
+	expectedErrorType := accounts.ApiHttpErrorType
 
 	expectedErrorMessage := "Account cannot be created as it violates a duplicate constraint"
-	expectedhttpStatus := http.StatusConflict
+	expectedHttpStatus := http.StatusConflict
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 		io.WriteString(w, expectedErrorMessageResponse)
 	})
 
@@ -220,7 +221,7 @@ func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
@@ -229,12 +230,13 @@ func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
 
 	expectedErrorMessageResponse := `{"error_message":"validation failure list:\nvalidation failure list:\nid in body is required"}`
 	expectedCorrectRequest := `/v1/organisation/accounts`
+	expectedErrorType := accounts.ApiHttpErrorType
 
 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body is required"
-	expectedhttpStatus := http.StatusBadRequest
+	expectedHttpStatus := http.StatusBadRequest
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 		io.WriteString(w, expectedErrorMessageResponse)
 	})
 
@@ -261,7 +263,7 @@ func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T) {
@@ -272,10 +274,12 @@ func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body must be of type uuid: \"grgrghrgr\""
-	expectedhttpStatus := http.StatusBadRequest
+	expectedHttpStatus := http.StatusBadRequest
+
+	expectedErrorType := accounts.ApiHttpErrorType
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 		io.WriteString(w, expectedErrorMessageResponse)
 	})
 
@@ -302,7 +306,7 @@ func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T
 			response, nil)
 	}
 
-	assertBadStatusError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedhttpStatus)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
@@ -311,12 +315,12 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 	expectedCorrectRequest := `/v1/organisation/accounts`
 
 	expectedErrorType := accounts.UnmarshallingError
-	expectedErrorMessage := "unexpected end of JSON input"
+	expectedErrorMessage := ""
 
-	expectedhttpStatus := http.StatusInternalServerError
+	expectedHttpStatus := http.StatusInternalServerError
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedhttpStatus)
+		w.WriteHeader(expectedHttpStatus)
 	})
 
 	defer ts.Close()
@@ -338,7 +342,7 @@ func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testin
 			response, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
 func generateValidGenericAccountData() *accounts.AccountData {

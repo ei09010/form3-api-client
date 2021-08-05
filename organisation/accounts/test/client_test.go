@@ -105,9 +105,13 @@ func TestNewClient_emptyBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 
 	expectedErrorType := accounts.BaseUrlParsingError
 
+	expectedRequest := ""
+
+	expectedHttpStatus := http.StatusBadRequest
+
 	// Act
 
-	accountClient, err := accounts.NewClient("", time.Duration(1*time.Millisecond))
+	accountClient, err := accounts.NewClient(expectedRequest, time.Duration(1*time.Millisecond))
 
 	// Assert
 
@@ -116,7 +120,7 @@ func TestNewClient_emptyBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 			accountClient, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedRequest, expectedHttpStatus, expectedErrorType)
 
 }
 
@@ -127,6 +131,10 @@ func TestNewClient_invalidBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 	expectedErrorMessage := `parse "wrongURL": invalid URI for request`
 
 	expectedErrorType := accounts.BaseUrlParsingError
+
+	expectedRequest := "wrongURL"
+
+	expectedHttpStatus := http.StatusBadRequest
 
 	// Act
 
@@ -139,7 +147,7 @@ func TestNewClient_invalidBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
 			accountClient, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedRequest, expectedHttpStatus, expectedErrorType)
 
 }
 
@@ -235,9 +243,13 @@ func TestNewClient_invalidBaseUrlAndinvalidTimeout_returnsBaseUrlParsingError(t 
 
 	expectedErrorType := accounts.BaseUrlParsingError
 
+	expectedRequest := "wrongURL"
+
+	expectedHttpStatus := http.StatusBadRequest
+
 	// Act
 
-	accountClient, err := accounts.NewClient("wrongURL", time.Duration(-1*time.Millisecond))
+	accountClient, err := accounts.NewClient(expectedRequest, time.Duration(-1*time.Millisecond))
 
 	// Assert
 
@@ -246,7 +258,7 @@ func TestNewClient_invalidBaseUrlAndinvalidTimeout_returnsBaseUrlParsingError(t 
 			accountClient, nil)
 	}
 
-	assertClientInternalError(err, expectedErrorMessage, t, expectedErrorType)
+	assertClientError(err, expectedErrorMessage, t, expectedRequest, expectedHttpStatus, expectedErrorType)
 }
 
 // newTestServer creates a multiplex server to handle API endpoints
@@ -269,33 +281,16 @@ func equal(a, b []string) bool {
 	return true
 }
 
-func assertBadStatusError(err error, expectedErrorMessage string, t *testing.T, expectedCorrectRequest string, expectedhttpStatus int) {
+func assertClientError(err error, expectedErrorMessage string, t *testing.T, expectedCorrectRequest string, expectedhttpStatus int, expectedErrorType error) {
 	if err != nil {
-		if errors.Is(err, accounts.ApiHttpErrorType) {
-
-			tempErr := fmt.Errorf("%w | Path: %s returned %d with message %s", accounts.ApiHttpErrorType, expectedCorrectRequest, expectedhttpStatus, expectedErrorMessage)
-
-			if err.Error() != tempErr.Error() {
-				t.Errorf("Returned error message: got %s want %s",
-					err.Error(), tempErr.Error())
-			}
-		}
-	}
-}
-
-func assertClientInternalError(err error, expectedErrorMessage string, t *testing.T, expectedErrorType error) {
-	if err != nil {
-
 		if errors.Is(err, expectedErrorType) {
 
-			testErr := fmt.Errorf("%w | %s", expectedErrorType, expectedErrorMessage)
+			expectedErrorFinalMessage := fmt.Errorf("%w | Path: %s returned %d with message %s", expectedErrorType, expectedCorrectRequest, expectedhttpStatus, expectedErrorMessage)
 
-			if err.Error() != testErr.Error() {
+			if err.Error() != expectedErrorFinalMessage.Error() {
 				t.Errorf("Returned error message: got %s want %s",
-					err.Error(), testErr.Error())
+					err.Error(), expectedErrorFinalMessage.Error())
 			}
-
 		}
-
 	}
 }
