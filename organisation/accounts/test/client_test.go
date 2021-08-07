@@ -10,255 +10,126 @@ import (
 	"time"
 )
 
-var (
-	validUrl = "http://localhost:8080"
-)
-
-func TestNewClient_validUrl_returnsValidClient(t *testing.T) {
+func TestClientSuccessCases(t *testing.T) {
 
 	// Arrange
-
-	expectedScheme := "http"
-	expectedPath := "/v1/organisation/accounts"
-	expectedHost := "localhost:8080"
-	expectedTimeoutClient := time.Duration(5 * time.Millisecond)
-
-	// Act
-
-	accountClient, err := accounts.NewClient(validUrl, time.Duration(expectedTimeoutClient))
-
-	if err != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
+	errorCases := map[string]struct {
+		baseUrl               string
+		expectedScheme        string
+		expectedPath          string
+		expectedHost          string
+		argumentTimeoutValue  time.Duration
+		expectedTimeoutClient time.Duration
+	}{
+		"Valid Url": {
+			baseUrl:               "http://localhost:8080",
+			expectedScheme:        "http",
+			expectedPath:          "/v1/organisation/accounts",
+			expectedHost:          "localhost:8080",
+			expectedTimeoutClient: time.Duration(5 * time.Millisecond),
+		},
+		"Valid Url and Zero Timeout Value": {
+			baseUrl:               "http://localhost:8080",
+			expectedScheme:        "http",
+			expectedPath:          "/v1/organisation/accounts",
+			expectedHost:          "localhost:8080",
+			argumentTimeoutValue:  time.Duration(0),
+			expectedTimeoutClient: accounts.DefaultTimeOutValue,
+		},
+		"Valid Url and Invalid Timeout Value": {
+			baseUrl:               "http://localhost:8080",
+			expectedScheme:        "http",
+			expectedPath:          "/v1/organisation/accounts",
+			expectedHost:          "localhost:8080",
+			argumentTimeoutValue:  time.Duration(-1),
+			expectedTimeoutClient: accounts.DefaultTimeOutValue,
+		},
 	}
 
-	// Assert
+	for _, tt := range errorCases {
 
-	if accountClient.BaseURL.Path != expectedPath {
-		t.Errorf("client returned path: got %s want %s",
-			accountClient.BaseURL.Path, expectedPath)
+		accountClient, err := accounts.NewClient(tt.baseUrl, time.Duration(tt.expectedTimeoutClient))
+
+		if err != nil {
+			t.Errorf("Returned reponse: got %v want %v",
+				accountClient, nil)
+		}
+
+		// Assert
+
+		if accountClient.BaseURL.Path != tt.expectedPath {
+			t.Errorf("client returned path: got %s want %s",
+				accountClient.BaseURL.Path, tt.expectedPath)
+		}
+
+		if accountClient.BaseURL.Host != tt.expectedHost {
+			t.Errorf("client returned host: got %s want %s",
+				accountClient.BaseURL.Host, tt.expectedHost)
+		}
+
+		if accountClient.BaseURL.Scheme != tt.expectedScheme {
+			t.Errorf("client returned scheme: got %s want %s",
+				accountClient.BaseURL.Scheme, tt.expectedScheme)
+		}
+
+		if accountClient.Timeout != tt.expectedTimeoutClient {
+			t.Errorf("client returned timeout: got %s want %s",
+				accountClient.Timeout, tt.expectedTimeoutClient)
+		}
 	}
-
-	if accountClient.BaseURL.Host != expectedHost {
-		t.Errorf("client returned host: got %s want %s",
-			accountClient.BaseURL.Host, expectedHost)
-	}
-
-	if accountClient.BaseURL.Scheme != expectedScheme {
-		t.Errorf("client returned scheme: got %s want %s",
-			accountClient.BaseURL.Scheme, expectedScheme)
-	}
-
-	if accountClient.Timeout != expectedTimeoutClient {
-		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.Timeout, expectedTimeoutClient)
-	}
-}
-
-func TestNewClient_validUrlAndDefaultTimeoutValue_returnsValidClientWithDefaultTimeoutValue(t *testing.T) {
-
-	// Arrange
-
-	expectedScheme := "http"
-	expectedPath := "/v1/organisation/accounts"
-	expectedHost := "localhost:8080"
-	zeroValueTimeout := time.Duration(0)
-	expectedDefaultTimeoutValue := accounts.DefaultTimeOutValue
-
-	// Act
-
-	accountClient, err := accounts.NewClient(validUrl, zeroValueTimeout)
-
-	if err != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
-	}
-
-	// Assert
-
-	if accountClient.BaseURL.Path != expectedPath {
-		t.Errorf("client returned path: got %s want %s",
-			accountClient.BaseURL.Path, expectedPath)
-	}
-
-	if accountClient.BaseURL.Host != expectedHost {
-		t.Errorf("client returned host: got %s want %s",
-			accountClient.BaseURL.Host, expectedHost)
-	}
-
-	if accountClient.BaseURL.Scheme != expectedScheme {
-		t.Errorf("client returned scheme: got %s want %s",
-			accountClient.BaseURL.Scheme, expectedScheme)
-	}
-
-	if accountClient.Timeout != expectedDefaultTimeoutValue {
-		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.Timeout, expectedDefaultTimeoutValue)
-	}
-}
-
-func TestNewClient_emptyBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
-
-	// Arrange
-
-	expectedErrorMessage := `parse "": empty url`
-
-	expectedErrorType := accounts.BaseUrlParsingError
-
-	expectedRequest := ""
-
-	expectedHttpStatus := http.StatusBadRequest
-
-	// Act
-
-	accountClient, err := accounts.NewClient(expectedRequest, time.Duration(1*time.Millisecond))
-
-	// Assert
-
-	if accountClient != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
-	}
-
-	assertClientError(err, expectedErrorMessage, t, expectedRequest, expectedHttpStatus, expectedErrorType)
 
 }
 
-func TestNewClient_invalidBaseUrl_returnsBaseUrlParsingError(t *testing.T) {
+func TestClientErrorCases(t *testing.T) {
 
 	// Arrange
-
-	expectedErrorMessage := `parse "wrongURL": invalid URI for request`
-
-	expectedErrorType := accounts.BaseUrlParsingError
-
-	expectedRequest := "wrongURL"
-
-	expectedHttpStatus := http.StatusBadRequest
-
-	// Act
-
-	accountClient, err := accounts.NewClient("wrongURL", time.Duration(1*time.Millisecond))
-
-	// Assert
-
-	if accountClient != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
+	errorCases := map[string]struct {
+		argumentUrl          string
+		expectedErrorMessage string
+		expectedErrorType    error
+		baseUrl              string
+		expectedHttpStatus   int
+		timeoutValue         time.Duration
+	}{
+		"Empty Base Url": {
+			expectedErrorMessage: `parse "": empty url`,
+			expectedErrorType:    accounts.BaseUrlParsingError,
+			baseUrl:              "",
+			expectedHttpStatus:   http.StatusBadRequest,
+			timeoutValue:         time.Duration(1 * time.Millisecond),
+		},
+		"Invalid Base Url": {
+			expectedErrorMessage: `parse "wrongURL": invalid URI for request`,
+			expectedErrorType:    accounts.BaseUrlParsingError,
+			baseUrl:              "wrongURL",
+			expectedHttpStatus:   http.StatusBadRequest,
+			timeoutValue:         time.Duration(1 * time.Millisecond),
+		},
+		"Invalid BaseUrl and Invalid Timeout Value": {
+			expectedErrorMessage: `parse "wrongURL": invalid URI for request`,
+			expectedErrorType:    accounts.BaseUrlParsingError,
+			baseUrl:              "wrongURL",
+			expectedHttpStatus:   http.StatusBadRequest,
+			timeoutValue:         time.Duration(-1 * time.Millisecond),
+		},
 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedRequest, expectedHttpStatus, expectedErrorType)
+	for _, tt := range errorCases {
 
-}
+		// Act
 
-func TestNewClient_invalidTimeoutValue_returnsValidClientWithDefaultValue(t *testing.T) {
+		accountClient, err := accounts.NewClient(tt.baseUrl, tt.timeoutValue)
 
-	// Arrange
+		// Assert
 
-	expectedScheme := "http"
-	expectedPath := "/v1/organisation/accounts"
-	expectedHost := "localhost:8080"
-	invalidValueTimeout := time.Duration(-1 * time.Millisecond)
-	expectedDefaultTimeoutValue := accounts.DefaultTimeOutValue
+		if accountClient != nil {
+			t.Errorf("Returned reponse: got %v want %v",
+				accountClient, nil)
+		}
 
-	// Act
-
-	accountClient, err := accounts.NewClient(validUrl, invalidValueTimeout)
-
-	if err != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
+		assertClientError(err, tt.expectedErrorMessage, t, tt.baseUrl, tt.expectedHttpStatus, tt.expectedErrorType)
 	}
 
-	// Assert
-
-	if accountClient.BaseURL.Path != expectedPath {
-		t.Errorf("client returned path: got %s want %s",
-			accountClient.BaseURL.Path, expectedPath)
-	}
-
-	if accountClient.BaseURL.Host != expectedHost {
-		t.Errorf("client returned host: got %s want %s",
-			accountClient.BaseURL.Host, expectedHost)
-	}
-
-	if accountClient.BaseURL.Scheme != expectedScheme {
-		t.Errorf("client returned scheme: got %s want %s",
-			accountClient.BaseURL.Scheme, expectedScheme)
-	}
-
-	if accountClient.Timeout != expectedDefaultTimeoutValue {
-		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.Timeout, expectedDefaultTimeoutValue)
-	}
-}
-
-func TestNewClient_invalidTimeoutValueInNanoSeconds_returnsValidClientWithDefaultValue(t *testing.T) {
-
-	// Arrange
-
-	expectedScheme := "http"
-	expectedPath := "/v1/organisation/accounts"
-	expectedHost := "localhost:8080"
-	invalidValueTimeout := time.Duration(50 * time.Nanosecond)
-	expectedDefaultTimeoutValue := accounts.DefaultTimeOutValue
-
-	// Act
-
-	accountClient, err := accounts.NewClient(validUrl, invalidValueTimeout)
-
-	if err != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
-	}
-
-	// Assert
-
-	if accountClient.BaseURL.Path != expectedPath {
-		t.Errorf("client returned path: got %s want %s",
-			accountClient.BaseURL.Path, expectedPath)
-	}
-
-	if accountClient.BaseURL.Host != expectedHost {
-		t.Errorf("client returned host: got %s want %s",
-			accountClient.BaseURL.Host, expectedHost)
-	}
-
-	if accountClient.BaseURL.Scheme != expectedScheme {
-		t.Errorf("client returned scheme: got %s want %s",
-			accountClient.BaseURL.Scheme, expectedScheme)
-	}
-
-	if accountClient.Timeout != expectedDefaultTimeoutValue {
-		t.Errorf("client returned timeout: got %s want %s",
-			accountClient.Timeout, expectedDefaultTimeoutValue)
-	}
-}
-
-func TestNewClient_invalidBaseUrlAndinvalidTimeout_returnsBaseUrlParsingError(t *testing.T) {
-
-	// Arrange
-
-	expectedErrorMessage := `parse "wrongURL": invalid URI for request`
-
-	expectedErrorType := accounts.BaseUrlParsingError
-
-	expectedRequest := "wrongURL"
-
-	expectedHttpStatus := http.StatusBadRequest
-
-	// Act
-
-	accountClient, err := accounts.NewClient(expectedRequest, time.Duration(-1*time.Millisecond))
-
-	// Assert
-
-	if accountClient != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			accountClient, nil)
-	}
-
-	assertClientError(err, expectedErrorMessage, t, expectedRequest, expectedHttpStatus, expectedErrorType)
 }
 
 // newTestServer creates a multiplex server to handle API endpoints
