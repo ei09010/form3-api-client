@@ -283,6 +283,7 @@ func equal(a, b []string) bool {
 
 func assertClientError(err error, expectedErrorMessage string, t *testing.T, expectedCorrectRequest string, expectedhttpStatus int, expectedErrorType error) {
 	if err != nil {
+
 		if errors.Is(err, expectedErrorType) {
 
 			expectedErrorFinalMessage := fmt.Errorf("%w | Path: %s returned %d with message %s", expectedErrorType, expectedCorrectRequest, expectedhttpStatus, expectedErrorMessage)
@@ -291,6 +292,9 @@ func assertClientError(err error, expectedErrorMessage string, t *testing.T, exp
 				t.Errorf("Returned error message: got %s want %s",
 					err.Error(), expectedErrorFinalMessage.Error())
 			}
+		} else {
+			t.Errorf("Returned error type: got %s want %s",
+				err.Error(), expectedErrorType.Error())
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"path"
 
 	"github.com/google/uuid"
@@ -39,11 +40,14 @@ func (c *Client) getRequest() (*AccountData, error) {
 	httpResponse, err := c.HttpClient.Do(customReq)
 
 	if err != nil {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ExecutingRequestError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+		if urlErr, ok := err.(*url.Error); ok {
+			if urlErr.Timeout() {
+				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", TimeoutError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+			} else {
+				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ExecutingRequestError, httpResponse.Request.URL.Path, http.StatusBadRequest, err.Error())
+			}
+		}
 	}
-
-	defer httpResponse.Body.Close()
 
 	var accountsData AccountData
 
@@ -52,7 +56,9 @@ func (c *Client) getRequest() (*AccountData, error) {
 		responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
 		if err != nil {
+
 			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+
 		}
 
 		httpResponse.Body.Close()
@@ -81,6 +87,7 @@ func (c *Client) getRequest() (*AccountData, error) {
 
 	} else {
 
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, c.BaseURL.String(), http.StatusInternalServerError, err.Error())
 	}
+
 }

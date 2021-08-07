@@ -3,12 +3,11 @@ package accounts_test
 import (
 	"bytes"
 	"ei09010/form3-api-client/organisation/accounts"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -28,13 +27,7 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 	expectedCorrectResponse := `{"data":{"attributes":{"account_classification":"Personal","alternative_names":["Alternative Names."],"bank_id":"400300","bank_id_code":"GBDSC","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
-
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, expectedCorrectResponse)
-	})
-
-	defer ts.Close()
+	expectedHttpStatus := http.StatusOK
 
 	expectedAccountClassification := "Personal"
 	expectedAlternativeNames := []string{"Alternative Names."}
@@ -52,18 +45,30 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 	expectedVersion := 0
 	expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
+	r := ioutil.NopCloser(bytes.NewReader([]byte(expectedCorrectResponse)))
 
-	if err != nil {
-		t.Errorf(err.Error())
+	accountSuccessClient := &MockHttpClient{
+		DoFunc: func(*http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: expectedHttpStatus,
+				Request:    &http.Request{URL: &url.URL{Path: expectedCorrectRequest}},
+				Body:       r,
+			}, nil
+		},
+	}
+
+	accountsClient := &accounts.Client{
+		BaseURL:    &url.URL{Path: expectedCorrectRequest},
+		HttpClient: accountSuccessClient,
 	}
 
 	// Act
 
-	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+	response, err := accountsClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
 
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Errorf("Returned err: got %v want %v",
+			response, nil)
 	}
 
 	// Assert
@@ -151,155 +156,114 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 }
 
-func TestFetch_notFoundAccountId_returnsNotFoundStatusError(t *testing.T) {
+func TestErrorCases(t *testing.T) {
 
 	// Arrange
-
-	expectedErrorMessageResponse := `{"error_message":"record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"}`
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
-
-	expectedErrorMessage := "record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"
-	expectedHttpStatus := http.StatusNotFound
-	expectedErrorType := accounts.ApiHttpErrorType
-
-	r := ioutil.NopCloser(bytes.NewReader([]byte(expectedErrorMessageResponse)))
-
-	accountErrClient := &MockHttpClient{
-		DoFunc: func(*http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: expectedHttpStatus,
-				Request:    &http.Request{URL: &url.URL{Path: expectedCorrectRequest}},
-				Body:       r,
-			}, nil
+	errorCases := map[string]struct {
+		accountId            string
+		messageResponse      string
+		requestPath          string
+		expectedErrorMessage string
+		expectedHttpStatus   int
+		expectedErrorType    error
+		doError              error
+	}{
+		"Not found accountId": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			messageResponse:      `{"error_message":"record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"}`,
+			requestPath:          "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			expectedErrorMessage: "record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist",
+			expectedHttpStatus:   http.StatusNotFound,
+			expectedErrorType:    accounts.ApiHttpErrorType,
 		},
+		"Internal Error": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			messageResponse:      "",
+			requestPath:          "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			expectedErrorMessage: "unexpected end of JSON input",
+			expectedHttpStatus:   http.StatusInternalServerError,
+			expectedErrorType:    accounts.UnmarshallingError,
+		},
+		"Invalid json response in successful request": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			messageResponse:      `{"data":unt_classion":"Personal222","native_names":["Alternative Names."],"ban":"400300","bank_id_code":"G","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`,
+			requestPath:          "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			expectedErrorMessage: "invalid character 'u' looking for beginning of value",
+			expectedHttpStatus:   http.StatusOK,
+			expectedErrorType:    accounts.UnmarshallingError,
+		},
+		"Id is not a valid uuid": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			messageResponse:      `{"error_message": "id is not a valid uuid"}`,
+			requestPath:          "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			expectedErrorMessage: "id is not a valid uuid",
+			expectedHttpStatus:   http.StatusBadRequest,
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
+		"Missing resource in path": {
+			accountId: "ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			messageResponse: `{
+				"code": "PAGE_NOT_FOUND",
+				"message": "Page not found"
+			}`,
+			requestPath:          "/v1/organisation/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			expectedErrorMessage: "",
+			expectedHttpStatus:   http.StatusNotFound,
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
+		"http response with not supported error": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			messageResponse:      "",
+			requestPath:          "/v1/organisation/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+			expectedErrorMessage: ` "": feature not supported`,
+			expectedHttpStatus:   http.StatusBadRequest,
+			expectedErrorType:    accounts.ExecutingRequestError,
+			doError: &url.Error{
+				Err: http.ErrNotSupported,
+			},
+		},
+		// "http response with timeout error": {
+		// 	accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+		// 	messageResponse:      "",
+		// 	requestPath:          "/v1/organisation/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
+		// 	expectedErrorMessage: "feature not supported",
+		// 	expectedHttpStatus:   http.StatusInternalServerError,
+		// 	expectedErrorType:    accounts.ResponseReadError,
+		// 	doError: &url.Error{
+		// 		Err: &url.Error{timeout.},
+		// 	},
+		// },
 	}
 
-	accountsClient := &accounts.Client{
-		BaseURL:    &url.URL{Path: expectedCorrectRequest},
-		HttpClient: accountErrClient,
+	for _, tt := range errorCases {
+
+		accountErrClient := &MockHttpClient{
+			DoFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: tt.expectedHttpStatus,
+					Request:    &http.Request{URL: &url.URL{Path: tt.requestPath}},
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(tt.messageResponse))),
+				}, tt.doError
+			},
+		}
+
+		accountsClient := &accounts.Client{
+			BaseURL:    &url.URL{Path: tt.requestPath},
+			HttpClient: accountErrClient,
+		}
+
+		// Act
+
+		response, err := accountsClient.Fetch(uuid.MustParse(tt.accountId))
+
+		fmt.Println(err)
+
+		if response != nil {
+			t.Errorf("Returned reponse: got %v want %v",
+				response, nil)
+		}
+
+		assertClientError(err, tt.expectedErrorMessage, t, tt.requestPath, tt.expectedHttpStatus, tt.expectedErrorType)
 	}
 
-	// Act
-
-	response, err := accountsClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
-
-	if response != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			response, nil)
-	}
-
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
-
-func TestFetch_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
-
-	// Arrange
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
-
-	expectedErrorType := accounts.UnmarshallingError
-	expectedErrorMessage := "unexpected end of JSON input"
-
-	expectedHttpStatus := http.StatusInternalServerError
-
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-	})
-
-	defer ts.Close()
-
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	// Act
-
-	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
-
-	// Assert
-
-	if response != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			response, nil)
-	}
-
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
-
-func TestFetch_emptyResponseInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
-
-	// Arrange
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
-
-	expectedErrorType := accounts.UnmarshallingError
-	expectedErrorMessage := "unexpected end of JSON input"
-
-	expectedHttpStatus := http.StatusBadRequest
-
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-	})
-
-	defer ts.Close()
-
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	// Act
-
-	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
-
-	// Assert
-
-	if response != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			response, nil)
-	}
-
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
-
-func TestFetch_invalidResponseBodyInSuccessResponse_returnsUnmarshallingError(t *testing.T) {
-
-	// Arrange
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
-	expectedResponseInvalidJson := `{"data":unt_classion":"Personal222","native_names":["Alternative Names."],"ban":"400300","bank_id_code":"G","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`
-
-	expectedErrorType := accounts.UnmarshallingError
-	expectedErrorMessage := "invalid character 'u' looking for beginning of value"
-
-	expectedHttpStatus := http.StatusOK
-
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-		io.WriteString(w, expectedResponseInvalidJson)
-	})
-
-	defer ts.Close()
-
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	// Act
-
-	response, err := accountClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
-
-	// Assert
-
-	if response != nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			response, nil)
-	}
-
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
-
-// add tests:
-// - 404 with un expected error message
