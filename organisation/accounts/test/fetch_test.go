@@ -3,7 +3,6 @@ package accounts_test
 import (
 	"bytes"
 	"ei09010/form3-api-client/organisation/accounts"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -156,7 +155,7 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 }
 
-func TestErrorCases(t *testing.T) {
+func TestFetchErrorCases(t *testing.T) {
 
 	// Arrange
 	errorCases := map[string]struct {
@@ -255,8 +254,6 @@ func TestErrorCases(t *testing.T) {
 		// Act
 
 		response, err := accountsClient.Fetch(uuid.MustParse(tt.accountId))
-
-		fmt.Println(err)
 
 		if response != nil {
 			t.Errorf("Returned reponse: got %v want %v",

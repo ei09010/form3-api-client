@@ -12,6 +12,7 @@ const (
 
 // Error Standard Types
 var (
+	// add api errror type per http status: NotFoundError; BadRequestError
 	ApiHttpErrorType      = errors.New("API Error")
 	UnmarshallingError    = errors.New("UnmarshallingError")
 	BaseUrlParsingError   = errors.New("BaseUrlParsingError")
