@@ -112,7 +112,7 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 	}
 
 	if !equal(response.Data.Attributes.AlternativeNames, expectedAlternativeNames) {
-		t.Errorf("handler returned unexpecteda attributes alternative names: got %s want %s",
+		t.Errorf("handler returned unexpected attributes alternative names: got %s want %s",
 			response.Data.Attributes.AlternativeNames, expectedAlternativeNames)
 	}
 

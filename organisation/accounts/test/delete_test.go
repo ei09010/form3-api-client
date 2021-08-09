@@ -1,9 +1,11 @@
 package accounts_test
 
 import (
+	"bytes"
 	"ei09010/form3-api-client/organisation/accounts"
-	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -42,188 +44,282 @@ func TestDelete_existingAccountId_DoesntReturnError(t *testing.T) {
 	}
 }
 
-func TestDelete_InvalidVersion_returnsConflictStatusError(t *testing.T) {
+func TestDeleteErrorCases(t *testing.T) {
 
 	// Arrange
-
-	expectedErrorMessageResponse := `{"error_message": "invalid version"}`
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
-
-	expectedErrorMessage := "invalid version"
-	expectedHttpStatus := http.StatusNotFound
-	expectedErrorType := accounts.ApiHttpErrorType
-
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-		io.WriteString(w, expectedErrorMessageResponse)
-	})
-
-	defer ts.Close()
-
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-	if err != nil {
-		t.Errorf(err.Error())
+	errorCases := map[string]struct {
+		accountId            string
+		version              int
+		expectedHttpStatus   int
+		requestPath          string
+		messageResponse      string
+		expectedErrorMessage string
+		expectedErrorType    error
+		doError              error
+	}{
+		"Invalid version": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusNotFound,
+			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`,
+			messageResponse:      `{"error_message": "invalid version"}`,
+			expectedErrorMessage: "invalid version",
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
+		"Invalid UUID": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusBadRequest,
+			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`,
+			messageResponse:      `{"error_message":"id is not a valid uuid"}`,
+			expectedErrorMessage: `id is not a valid uuid`,
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
+		"Non existent accountId": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusNotFound,
+			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`,
+			messageResponse:      "",
+			expectedErrorMessage: "",
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
+		"No version number in query": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusBadRequest,
+			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`,
+			messageResponse:      `{"error_message":"invalid version number"}`,
+			expectedErrorMessage: "invalid version number",
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
+		"Internal server error": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusInternalServerError,
+			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`,
+			messageResponse:      "",
+			expectedErrorMessage: "",
+			expectedErrorType:    accounts.ApiHttpErrorType,
+		},
 	}
 
-	// Act
+	for _, tt := range errorCases {
 
-	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
+		accountErrClient := &MockHttpClient{
+			DoFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: tt.expectedHttpStatus,
+					Request:    &http.Request{URL: &url.URL{Path: tt.requestPath}},
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(tt.messageResponse))),
+				}, tt.doError
+			},
+		}
 
-	// Assert
+		accountsClient := &accounts.Client{
+			BaseURL:    &url.URL{Path: tt.requestPath},
+			HttpClient: accountErrClient,
+		}
 
-	if err == nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			err, nil)
+		// Act
+
+		err := accountsClient.Delete(uuid.MustParse(tt.accountId), tt.version)
+
+		// Assert
+
+		if err == nil {
+			t.Errorf("Returned reponse: got %v want %v",
+				err, nil)
+		}
+
+		assertClientError(err, tt.expectedErrorMessage, t, tt.requestPath, tt.expectedHttpStatus, tt.expectedErrorType)
+
 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
 }
 
-func TestDelete_nonExistingAccountId_returnsNotFoundStatusError(t *testing.T) {
+// func TestDelete_InvalidVersion_returnsConflictStatusError(t *testing.T) {
 
-	// Arrange
+// 	// Arrange
 
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
-	expectedErrorMessage := ""
-	expectedHttpStatus := http.StatusNotFound
-	expectedErrorType := accounts.ApiHttpErrorType
+// 	expectedErrorMessageResponse := `{"error_message": "invalid version"}`
+// 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
 
-	ts := newTestServer("expectedCorrectRequest", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
+// 	expectedErrorMessage := "invalid version"
+// 	expectedHttpStatus := http.StatusNotFound
+// 	expectedErrorType := accounts.ApiHttpErrorType
 
-	})
+// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(expectedHttpStatus)
+// 		io.WriteString(w, expectedErrorMessageResponse)
+// 	})
 
-	defer ts.Close()
+// 	defer ts.Close()
 
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
+// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+// 	if err != nil {
+// 		t.Errorf(err.Error())
+// 	}
 
-	// Act
+// 	// Act
 
-	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
+// 	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
 
-	// Assert
+// 	// Assert
 
-	if err == nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			err, nil)
-	}
+// 	if err == nil {
+// 		t.Errorf("Returned reponse: got %v want %v",
+// 			err, nil)
+// 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
+// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
+// }
 
-func TestDelete_noVersionNumberInQuery_returnsBadRequestError(t *testing.T) {
+// func TestDelete_nonExistingAccountId_returnsNotFoundStatusError(t *testing.T) {
 
-	// Arrange
+// 	// Arrange
 
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
-	expectedErrorMessage := "invalid version number"
-	expectedErrorType := accounts.ApiHttpErrorType
-	expectedHttpStatus := http.StatusBadRequest
-	expectedResponse := `{"error_message":"invalid version number"}`
+// 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
+// 	expectedErrorMessage := ""
+// 	expectedHttpStatus := http.StatusNotFound
+// 	expectedErrorType := accounts.ApiHttpErrorType
 
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-		io.WriteString(w, expectedResponse)
-	})
+// 	ts := newTestServer("expectedCorrectRequest", func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(expectedHttpStatus)
 
-	defer ts.Close()
+// 	})
 
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
+// 	defer ts.Close()
 
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
-	// Act
+// 	if err != nil {
+// 		t.Errorf(err.Error())
+// 	}
 
-	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
+// 	// Act
 
-	// Assert
+// 	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
 
-	if err == nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			err, nil)
-	}
+// 	// Assert
 
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
+// 	if err == nil {
+// 		t.Errorf("Returned reponse: got %v want %v",
+// 			err, nil)
+// 	}
 
-func TestDelete_internalServerError_returnsInternalServerError(t *testing.T) {
+// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
+// }
 
-	// Arrange
+// func TestDelete_noVersionNumberInQuery_returnsBadRequestError(t *testing.T) {
 
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
-	expectedErrorMessage := ""
+// 	// Arrange
 
-	expectedHttpStatus := http.StatusInternalServerError
-	expectedErrorType := accounts.ApiHttpErrorType
+// 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
+// 	expectedErrorMessage := "invalid version number"
+// 	expectedErrorType := accounts.ApiHttpErrorType
+// 	expectedHttpStatus := http.StatusBadRequest
+// 	expectedResponse := `{"error_message":"invalid version number"}`
 
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-	})
+// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(expectedHttpStatus)
+// 		io.WriteString(w, expectedResponse)
+// 	})
 
-	defer ts.Close()
+// 	defer ts.Close()
 
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
+// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+// 	if err != nil {
+// 		t.Errorf(err.Error())
+// 	}
 
-	// Act
+// 	// Act
 
-	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
+// 	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
 
-	// Assert
+// 	// Assert
 
-	if err == nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			err, nil)
-	}
+// 	if err == nil {
+// 		t.Errorf("Returned reponse: got %v want %v",
+// 			err, nil)
+// 	}
 
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
+// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
+// }
 
-func TestDelete_invalidUUID_returnsBadRequest(t *testing.T) {
+// func TestDelete_internalServerError_returnsInternalServerError(t *testing.T) {
 
-	// Arrange
+// 	// Arrange
 
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
-	expectedErrorMessage := `id is not a valid uuid`
+// 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
+// 	expectedErrorMessage := ""
 
-	expectedResponse := `{"error_message":"id is not a valid uuid"}`
+// 	expectedHttpStatus := http.StatusInternalServerError
+// 	expectedErrorType := accounts.ApiHttpErrorType
 
-	expectedHttpStatus := http.StatusBadRequest
-	expectedErrorType := accounts.ApiHttpErrorType
+// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(expectedHttpStatus)
+// 	})
 
-	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(expectedHttpStatus)
-		io.WriteString(w, expectedResponse)
-	})
+// 	defer ts.Close()
 
-	defer ts.Close()
+// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
 
-	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
+// 	if err != nil {
+// 		t.Errorf(err.Error())
+// 	}
 
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+// 	// Act
 
-	// Act
+// 	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
 
-	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
+// 	// Assert
 
-	// Assert
+// 	if err == nil {
+// 		t.Errorf("Returned reponse: got %v want %v",
+// 			err, nil)
+// 	}
 
-	if err == nil {
-		t.Errorf("Returned reponse: got %v want %v",
-			err, nil)
-	}
+// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
+// }
 
-	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-}
+// func TestDelete_invalidUUID_returnsBadRequest(t *testing.T) {
+
+// 	// Arrange
+
+// 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=1`
+// 	expectedErrorMessage := `id is not a valid uuid`
+
+// 	expectedResponse := `{"error_message":"id is not a valid uuid"}`
+
+// 	expectedHttpStatus := http.StatusBadRequest
+// 	expectedErrorType := accounts.ApiHttpErrorType
+
+// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(expectedHttpStatus)
+// 		io.WriteString(w, expectedResponse)
+// 	})
+
+// 	defer ts.Close()
+
+// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
+
+// 	if err != nil {
+// 		t.Errorf(err.Error())
+// 	}
+
+// 	// Act
+
+// 	err = accountClient.Delete(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"), 1)
+
+// 	// Assert
+
+// 	if err == nil {
+// 		t.Errorf("Returned reponse: got %v want %v",
+// 			err, nil)
+// 	}
+
+// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
+// }
