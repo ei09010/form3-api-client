@@ -2,22 +2,15 @@ package accounts
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
-
-type MockHttpClient struct {
-	DoFunc func(req *http.Request) (*http.Response, error)
-}
-
-func (mckHt *MockHttpClient) Do(req *http.Request) (*http.Response, error) {
-
-	return mckHt.DoFunc(req)
-}
 
 func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
@@ -25,7 +18,6 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 	expectedCorrectResponse := `{"data":{"attributes":{"account_classification":"Personal","alternative_names":["Alternative Names."],"bank_id":"400300","bank_id_code":"GBDSC","base_currency":"GBP","bic":"NWBKGB22","country":"GB","name":["Name of the account holder, up to four lines possible."]},"created_on":"2021-07-31T22:09:02.680Z","id":"ad27e265-9605-4b4b-a0e5-3003ea9cc4dc","modified_on":"2021-07-31T22:09:02.680Z","organisation_id":"eb0bd6f5-c3f5-44b2-b677-acd23cdde73c","type":"accounts","version":0},"links":{"self":"/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"}}`
 	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
-	expectedHttpStatus := http.StatusOK
 
 	expectedAccountClassification := "Personal"
 	expectedAlternativeNames := []string{"Alternative Names."}
@@ -43,24 +35,16 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 	expectedVersion := 0
 	expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 
-	r := ioutil.NopCloser(bytes.NewReader([]byte(expectedCorrectResponse)))
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, expectedCorrectResponse)
+	})
 
-	accountSuccessClient := &MockHttpClient{
-		DoFunc: func(*http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: expectedHttpStatus,
-				Request:    &http.Request{URL: &url.URL{Path: expectedCorrectRequest}},
-				Body:       r,
-			}, nil
-		},
-	}
-
-	accountsClient := &Client{
-		baseURL:    &url.URL{Path: expectedCorrectRequest},
-		HttpClient: accountSuccessClient,
-	}
+	defer ts.Close()
 
 	// Act
+
+	accountsClient, err := NewClient(WithBaseURL(ts.URL), WithTimeout(time.Duration(100*time.Millisecond)))
 
 	response, err := accountsClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
 
@@ -154,6 +138,15 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 }
 
+type MockHttpClient struct {
+	DoFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (mckHt *MockHttpClient) Do(req *http.Request) (*http.Response, error) {
+
+	return mckHt.DoFunc(req)
+}
+
 func TestFetchErrorCases(t *testing.T) {
 
 	// Arrange
@@ -233,33 +226,33 @@ func TestFetchErrorCases(t *testing.T) {
 		},
 	}
 
-	for _, tt := range errorCases {
+	for _, errCase := range errorCases {
 
 		accountErrClient := &MockHttpClient{
 			DoFunc: func(*http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: tt.expectedHttpStatus,
-					Request:    &http.Request{URL: &url.URL{Path: tt.requestPath}},
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(tt.messageResponse))),
-				}, tt.doError
+					StatusCode: errCase.expectedHttpStatus,
+					Request:    &http.Request{URL: &url.URL{Path: errCase.requestPath}},
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(errCase.messageResponse))),
+				}, errCase.doError
 			},
 		}
 
 		accountsClient := &Client{
-			baseURL:    &url.URL{Path: tt.requestPath},
+			baseURL:    &url.URL{Path: errCase.requestPath},
 			HttpClient: accountErrClient,
 		}
 
 		// Act
 
-		response, err := accountsClient.Fetch(uuid.MustParse(tt.accountId))
+		response, err := accountsClient.Fetch(uuid.MustParse(errCase.accountId))
 
 		if response != nil {
 			t.Errorf("Returned reponse: got %v want %v",
 				response, nil)
 		}
 
-		assertClientError(err, tt.expectedErrorMessage, t, tt.expectedErrorType, tt.expectedHttpStatus)
+		assertClientError(err, errCase.expectedErrorMessage, t, errCase.expectedErrorType, errCase.expectedHttpStatus)
 	}
 
 }

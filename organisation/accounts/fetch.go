@@ -54,7 +54,7 @@ func (c *Client) get(accountId uuid.UUID, config *apiConfig) (*http.Response, er
 
 	var err error
 
-	c.baseURL, err = c.baseURL.Parse(config.path)
+	c.baseURL, err = c.baseURL.Parse(config.path + "/" + accountId.String())
 
 	if err != nil {
 		return nil, err

@@ -236,26 +236,26 @@ func TestCreateErrorCases(t *testing.T) {
 		},
 	}
 
-	for _, tt := range errorCases {
+	for _, errCase := range errorCases {
 
 		accountErrClient := &MockHttpClient{
 			DoFunc: func(*http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: tt.expectedHttpStatus,
-					Request:    &http.Request{URL: &url.URL{Path: tt.requestPath}},
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(tt.messageResponse))),
-				}, tt.doError
+					StatusCode: errCase.expectedHttpStatus,
+					Request:    &http.Request{URL: &url.URL{Path: errCase.requestPath}},
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(errCase.messageResponse))),
+				}, errCase.doError
 			},
 		}
 
 		accountsClient := &Client{
-			baseURL:    &url.URL{Path: tt.requestPath},
+			baseURL:    &url.URL{Path: errCase.requestPath},
 			HttpClient: accountErrClient,
 		}
 
 		// Act
 
-		response, err := accountsClient.Create(tt.accountPayload)
+		response, err := accountsClient.Create(errCase.accountPayload)
 
 		// Assert
 
@@ -264,172 +264,11 @@ func TestCreateErrorCases(t *testing.T) {
 				response, nil)
 		}
 
-		assertClientError(err, tt.expectedErrorMessage, t, tt.expectedErrorType, tt.expectedHttpStatus)
+		assertClientError(err, errCase.expectedErrorMessage, t, errCase.expectedErrorType, errCase.expectedHttpStatus)
 
 	}
 
 }
-
-// func TestCreate_DuplicateContraintViolated_returnsConflictStatusError(t *testing.T) {
-
-// 	// Arrange
-
-// 	expectedErrorMessageResponse := `{"error_message":"Account cannot be created as it violates a duplicate constraint"}`
-// 	expectedCorrectRequest := `/v1/organisation/accounts`
-// 	expectedErrorType := accounts.ApiHttpErrorType
-
-// 	expectedErrorMessage := "Account cannot be created as it violates a duplicate constraint"
-// 	expectedHttpStatus := http.StatusConflict
-
-// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(expectedHttpStatus)
-// 		io.WriteString(w, expectedErrorMessageResponse)
-// 	})
-
-// 	defer ts.Close()
-
-// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-// 	if err != nil {
-// 		t.Errorf(err.Error())
-// 	}
-
-// 	// Act
-
-// 	defaultValidAccountData := generateValidGenericAccountData()
-
-// 	response, err := accountClient.Create(defaultValidAccountData)
-
-// 	// Assert
-
-// 	if response != nil {
-// 		t.Errorf("Returned reponse: got %v want %v",
-// 			response, nil)
-// 	}
-
-// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-// }
-
-// func TestCreate_MandatoryFieldMissing_returnsBadRequestError(t *testing.T) {
-
-// 	// Arrange
-
-// 	expectedErrorMessageResponse := `{"error_message":"validation failure list:\nvalidation failure list:\nid in body is required"}`
-// 	expectedCorrectRequest := `/v1/organisation/accounts`
-// 	expectedErrorType := accounts.ApiHttpErrorType
-
-// 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body is required"
-// 	expectedHttpStatus := http.StatusBadRequest
-
-// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(expectedHttpStatus)
-// 		io.WriteString(w, expectedErrorMessageResponse)
-// 	})
-
-// 	defer ts.Close()
-
-// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-// 	if err != nil {
-// 		t.Errorf(err.Error())
-// 	}
-
-// 	// Act
-
-// 	defaultValidAccountData := generateValidGenericAccountData()
-
-// 	defaultValidAccountData.Data.ID = ""
-
-// 	response, err := accountClient.Create(defaultValidAccountData)
-
-// 	// Assert
-
-// 	if response != nil {
-// 		t.Errorf("Returned reponse: got %v want %v",
-// 			response, nil)
-// 	}
-
-// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-// }
-
-// func TestCreate_MandatoryFielWithWrongFormat_returnsBadRequestError(t *testing.T) {
-
-// 	// Arrange
-
-// 	expectedErrorMessageResponse := `{"error_message":"validation failure list:\nvalidation failure list:\nid in body must be of type uuid: \"grgrghrgr\""}`
-// 	expectedCorrectRequest := `/v1/organisation/accounts`
-
-// 	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body must be of type uuid: \"grgrghrgr\""
-// 	expectedHttpStatus := http.StatusBadRequest
-
-// 	expectedErrorType := accounts.ApiHttpErrorType
-
-// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(expectedHttpStatus)
-// 		io.WriteString(w, expectedErrorMessageResponse)
-// 	})
-
-// 	defer ts.Close()
-
-// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-// 	if err != nil {
-// 		t.Errorf(err.Error())
-// 	}
-
-// 	// Act
-
-// 	defaultValidAccountData := generateValidGenericAccountData()
-
-// 	defaultValidAccountData.Data.ID = "grgrghrgr"
-
-// 	response, err := accountClient.Create(defaultValidAccountData)
-
-// 	// Assert
-
-// 	if response != nil {
-// 		t.Errorf("Returned reponse: got %v want %v",
-// 			response, nil)
-// 	}
-
-// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-// }
-
-// func TestCreate_emptyResponseInInternalError_returnsUnmarshallingError(t *testing.T) {
-
-// 	// Arrange
-// 	expectedCorrectRequest := `/v1/organisation/accounts`
-
-// 	expectedErrorType := accounts.UnmarshallingError
-// 	expectedErrorMessage := ""
-
-// 	expectedHttpStatus := http.StatusInternalServerError
-
-// 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(expectedHttpStatus)
-// 	})
-
-// 	defer ts.Close()
-
-// 	accountClient, err := accounts.NewClient(ts.URL, time.Duration(100*time.Millisecond))
-
-// 	if err != nil {
-// 		t.Errorf(err.Error())
-// 	}
-
-// 	// Act
-
-// 	response, err := accountClient.Create(&accounts.AccountData{})
-
-// 	// Assert
-
-// 	if response != nil {
-// 		t.Errorf("Returned reponse: got %v want %v",
-// 			response, nil)
-// 	}
-
-// 	assertClientError(err, expectedErrorMessage, t, expectedCorrectRequest, expectedHttpStatus, expectedErrorType)
-// }
 
 func generateAccountDataWithInvalidID(invalidIdContent string) *AccountData {
 

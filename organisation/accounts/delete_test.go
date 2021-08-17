@@ -143,26 +143,26 @@ func TestDeleteErrorCases(t *testing.T) {
 		},
 	}
 
-	for _, tt := range errorCases {
+	for _, errCase := range errorCases {
 
 		accountErrClient := &MockHttpClient{
 			DoFunc: func(*http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: tt.expectedHttpStatus,
-					Request:    &http.Request{URL: &url.URL{Path: tt.requestPath}},
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(tt.messageResponse))),
-				}, tt.doError
+					StatusCode: errCase.expectedHttpStatus,
+					Request:    &http.Request{URL: &url.URL{Path: errCase.requestPath}},
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(errCase.messageResponse))),
+				}, errCase.doError
 			},
 		}
 
 		accountsClient := &Client{
-			baseURL:    &url.URL{Path: tt.requestPath},
+			baseURL:    &url.URL{Path: errCase.requestPath},
 			HttpClient: accountErrClient,
 		}
 
 		// Act
 
-		err := accountsClient.Delete(uuid.MustParse(tt.accountId), tt.version)
+		err := accountsClient.Delete(uuid.MustParse(errCase.accountId), errCase.version)
 
 		// Assert
 
@@ -171,7 +171,7 @@ func TestDeleteErrorCases(t *testing.T) {
 				err, nil)
 		}
 
-		assertClientError(err, tt.expectedErrorMessage, t, tt.expectedErrorType, tt.expectedHttpStatus)
+		assertClientError(err, errCase.expectedErrorMessage, t, errCase.expectedErrorType, errCase.expectedHttpStatus)
 
 	}
 

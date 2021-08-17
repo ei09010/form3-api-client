@@ -58,7 +58,7 @@ func WithBaseURL(baseURL string) ClientOption {
 		parsedUrl, err := url.ParseRequestURI(baseURL)
 
 		if err != nil {
-			return fmt.Errorf("%w | %s", clientCreationError, err.Error())
+			return fmt.Errorf("%w | %d | %s", clientCreationError, http.StatusBadRequest, err.Error())
 		}
 
 		c.baseURL = parsedUrl
