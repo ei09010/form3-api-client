@@ -16,13 +16,13 @@ func (c *Client) Delete(accountId uuid.UUID, version int) error {
 
 	var err error
 
-	c.BaseURL.Path = path.Join(c.BaseURL.Path, fmt.Sprintf("/%s", accountId.String()))
+	c.baseURL.Path = path.Join(c.baseURL.Path, fmt.Sprintf("/%s", accountId.String()))
 
-	c.BaseURL, err = c.BaseURL.Parse(c.BaseURL.Path)
+	c.baseURL, err = c.baseURL.Parse(c.baseURL.Path)
 
 	if err != nil {
 
-		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	return c.deleteRequest(map[string]string{"version": strconv.Itoa(version)})
@@ -31,7 +31,7 @@ func (c *Client) Delete(accountId uuid.UUID, version int) error {
 
 func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
-	customReq, err := http.NewRequest(http.MethodDelete, c.BaseURL.String(), nil)
+	customReq, err := http.NewRequest(http.MethodDelete, c.baseURL.String(), nil)
 
 	q := customReq.URL.Query()
 
@@ -43,7 +43,7 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 	if err != nil {
 
-		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+		return fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	customReq.URL.Path = strings.Join([]string{customReq.URL.Path, customReq.URL.RawQuery}, "?")

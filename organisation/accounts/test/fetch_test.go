@@ -57,7 +57,7 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 	}
 
 	accountsClient := &accounts.Client{
-		BaseURL:    &url.URL{Path: expectedCorrectRequest},
+		baseURL:    &url.URL{Path: expectedCorrectRequest},
 		HttpClient: accountSuccessClient,
 	}
 
@@ -247,7 +247,7 @@ func TestFetchErrorCases(t *testing.T) {
 		}
 
 		accountsClient := &accounts.Client{
-			BaseURL:    &url.URL{Path: tt.requestPath},
+			baseURL:    &url.URL{Path: tt.requestPath},
 			HttpClient: accountErrClient,
 		}
 

@@ -7,43 +7,69 @@ import (
 	"time"
 )
 
+type apiConfig struct {
+	host string
+	path string
+}
+
+type ClientOption func(*Client) error
+
 type Client struct {
-	BaseURL    *url.URL
-	Timeout    time.Duration
+	baseURL    *url.URL
+	timeout    time.Duration
 	HttpClient interface {
 		Do(req *http.Request) (*http.Response, error)
 	}
 }
 
-func NewClient(baseUrl string, requestTimeout time.Duration) (*Client, error) {
+func NewClient(clientOptions ...ClientOption) (*Client, error) {
 
-	parsedUrl, err := url.ParseRequestURI(baseUrl)
-
-	if err != nil {
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BaseUrlParsingError, baseUrl, http.StatusBadRequest, err.Error())
+	c := &Client{
+		HttpClient: &http.Client{},
 	}
 
-	if requestTimeout.Milliseconds() <= 0 {
-		requestTimeout = DefaultTimeOutValue
+	for _, option := range clientOptions {
+		err := option(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	finalUrl, err := parsedUrl.Parse(AccountsPath)
+	return c, nil
+}
 
-	if err != nil {
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", PathParsingError, AccountsPath, http.StatusBadRequest, err.Error())
+// WithTimeout sets the client requests timeout with a custom value
+func WithTimeout(customRequestTimeout time.Duration) ClientOption {
+	return func(c *Client) error {
+
+		if customRequestTimeout.Milliseconds() <= 0 {
+			customRequestTimeout = DefaultTimeOutValue
+		}
+
+		c.timeout = customRequestTimeout
+
+		return nil
 	}
+}
 
-	return &Client{
-		BaseURL:    finalUrl,
-		Timeout:    requestTimeout,
-		HttpClient: &http.Client{Timeout: requestTimeout},
-	}, nil
+// WithBaseURL sets the client with a custom base url
+func WithBaseURL(baseURL string) ClientOption {
+	return func(c *Client) error {
+		parsedUrl, err := url.ParseRequestURI(baseURL)
+
+		if err != nil {
+			return fmt.Errorf("%w | %s", clientCreationError, err.Error())
+		}
+
+		c.baseURL = parsedUrl
+		return nil
+	}
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
 	httpClient := c.HttpClient
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: c.Timeout}
+		httpClient = &http.Client{}
 	}
 
 	req.Header.Set("content-encoding", "application/json; charset=utf-8")

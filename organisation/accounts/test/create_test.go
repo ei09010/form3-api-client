@@ -249,7 +249,7 @@ func TestCreateErrorCases(t *testing.T) {
 		}
 
 		accountsClient := &accounts.Client{
-			BaseURL:    &url.URL{Path: tt.requestPath},
+			baseURL:    &url.URL{Path: tt.requestPath},
 			HttpClient: accountErrClient,
 		}
 

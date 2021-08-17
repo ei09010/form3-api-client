@@ -3,91 +3,108 @@ package accounts
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"path"
 
 	"github.com/google/uuid"
 )
 
+var accountsApi = &apiConfig{
+	host: "https://api.form3.tech",
+	path: "/v1/organisation/accounts",
+}
+
 func (c *Client) Fetch(accountId uuid.UUID) (*AccountData, error) {
 
-	var err error
-
-	c.BaseURL.Path = path.Join(c.BaseURL.Path, fmt.Sprintf("/%s", accountId.String()))
-
-	c.BaseURL, err = c.BaseURL.Parse(c.BaseURL.Path)
-
-	if err != nil {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+	var response struct {
+		*AccountData
+		apiErrorMessage
 	}
 
-	return c.getRequest()
+	if err := c.getJSON(accountId, accountsApi, &response); err != nil {
+		return nil, fmt.Errorf("%w | %s", ResponseReadError, err.Error())
+	}
+
+	if err := response.Error(); err != nil {
+		return nil, err
+	}
+
+	return response.AccountData, nil
+}
+
+func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp interface{}) error {
+
+	httpResp, err := c.get(accountId, config)
+
+	if err != nil {
+		return err
+	}
+	defer httpResp.Body.Close()
+
+	err = json.NewDecoder(httpResp.Body).Decode(resp)
+
+	return err
 
 }
 
-func (c *Client) getRequest() (*AccountData, error) {
+func (c *Client) get(accountId uuid.UUID, config *apiConfig) (*http.Response, error) {
 
-	customReq, err := http.NewRequest(http.MethodGet, c.BaseURL.String(), nil)
+	host := config.host
+
+	if c.baseURL.Host != "" {
+		host = c.baseURL.Host
+	}
+
+	customReq, err := http.NewRequest(http.MethodGet, host+config.path+accountId.String(), nil)
 
 	if err != nil {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+		return nil, err
 	}
 
-	httpResponse, err := c.HttpClient.Do(customReq)
+	return c.HttpClient.Do(customReq)
 
-	if err != nil {
-		if urlErr, ok := err.(*url.Error); ok {
-			if urlErr.Timeout() {
-				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", TimeoutError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-			} else {
-				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ExecutingRequestError, httpResponse.Request.URL.Path, http.StatusBadRequest, err.Error())
-			}
-		}
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	var accountsData AccountData
+	// var accountsData AccountData
 
-	if httpResponse != nil {
+	// if httpResponse != nil {
 
-		responseBody, err := ioutil.ReadAll(httpResponse.Body)
+	// 	responseBody, err := ioutil.ReadAll(httpResponse.Body)
 
-		if err != nil {
+	// 	if err != nil {
 
-			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+	// 		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
 
-		}
+	// 	}
 
-		httpResponse.Body.Close()
+	// 	httpResponse.Body.Close()
 
-		if httpResponse.StatusCode == http.StatusOK {
+	// 	if httpResponse.StatusCode == http.StatusOK {
 
-			err = json.Unmarshal(responseBody, &accountsData)
+	// 		err = json.Unmarshal(responseBody, &accountsData)
 
-			if err != nil {
-				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-			}
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+	// 		}
 
-			return &accountsData, nil
-		} else {
+	// 		return &accountsData, nil
+	// 	} else {
 
-			apiHttpError := &ApiHttpError{}
+	// 		apiHttpError := &ApiHttpError{}
 
-			err = json.Unmarshal(responseBody, apiHttpError)
+	// 		err = json.Unmarshal(responseBody, apiHttpError)
 
-			if err != nil {
-				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-			}
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
+	// 		}
 
-			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
-		}
+	// 		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
+	// 	}
 
-	} else {
+	// } else {
 
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, c.BaseURL.String(), http.StatusInternalServerError, err.Error())
-	}
+	// 	return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, c.baseURL.String(), http.StatusInternalServerError, err.Error())
+	// }
 
 }

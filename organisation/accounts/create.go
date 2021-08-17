@@ -12,11 +12,11 @@ func (c *Client) Create(accountData *AccountData) (*AccountData, error) {
 
 	var err error
 
-	c.BaseURL, err = c.BaseURL.Parse(c.BaseURL.Path)
+	c.baseURL, err = c.baseURL.Parse(c.baseURL.Path)
 
 	if err != nil {
 
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	return c.postRequest(accountData)
@@ -28,16 +28,16 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 	accountDataStr, err := json.Marshal(accountData)
 
 	if err != nil {
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	postBody := bytes.NewBuffer(accountDataStr)
 
-	customReq, err := http.NewRequest(http.MethodPost, c.BaseURL.String(), postBody)
+	customReq, err := http.NewRequest(http.MethodPost, c.baseURL.String(), postBody)
 
 	if err != nil {
 
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.BaseURL.Path, http.StatusBadRequest, err.Error())
+		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
 	}
 
 	customReq.Header.Set("content-encoding", "application/json")

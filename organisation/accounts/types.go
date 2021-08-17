@@ -2,12 +2,12 @@ package accounts
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
 const (
-	AccountsPath        = "/v1/organisation/accounts"
-	DefaultTimeOutValue = time.Duration(10000 * time.Millisecond)
+	DefaultTimeOutValue = time.Duration(10 * time.Second)
 )
 
 // Error Standard Types
@@ -18,13 +18,22 @@ var (
 	// HttpNotFoundErr       = errors.New("Http Not Found error")
 	// HttpInternalServerErr = errors.New("Http Internal Server error")
 	UnmarshallingError    = errors.New("UnmarshallingError")
-	BaseUrlParsingError   = errors.New("BaseUrlParsingError")
+	baseURLParsingError   = errors.New("baseURLParsingError")
 	PathParsingError      = errors.New("PathParsingError")
 	BuildingRequestError  = errors.New("BuildingRequestError")
 	ExecutingRequestError = errors.New("ExecutingRequestError")
 	ResponseReadError     = errors.New("ResponseReadError")
 	TimeoutError          = errors.New("TimeoutError")
+	clientCreationError   = errors.New("Unable to create the client")
 )
+
+type apiErrorMessage struct {
+	ErrorMessage string `json:"error_message"`
+}
+
+func (e *apiErrorMessage) Error() error {
+	return fmt.Errorf("Error message returned by the API: %s", e.ErrorMessage)
+}
 
 // type ClientError struct {
 // 	url          string
