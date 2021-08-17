@@ -52,63 +52,19 @@ func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp *AccountRe
 
 func (c *Client) get(accountId uuid.UUID, config *apiConfig) (*http.Response, error) {
 
-	host := config.host
+	var err error
 
-	if c.baseURL.Host != "" {
-		host = c.baseURL.Host
+	c.baseURL, err = c.baseURL.Parse(config.path)
+
+	if err != nil {
+		return nil, err
 	}
-
-	customReq, err := http.NewRequest(http.MethodGet, host+config.path+accountId.String(), nil)
+	customReq, err := http.NewRequest(http.MethodGet, c.baseURL.String(), nil)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return c.HttpClient.Do(customReq)
-
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// var accountsData AccountData
-
-	// if httpResponse != nil {
-
-	// 	responseBody, err := ioutil.ReadAll(httpResponse.Body)
-
-	// 	if err != nil {
-
-	// 		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-
-	// 	}
-
-	// 	httpResponse.Body.Close()
-
-	// 	if httpResponse.StatusCode == http.StatusOK {
-
-	// 		err = json.Unmarshal(responseBody, &accountsData)
-
-	// 		if err != nil {
-	// 			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-	// 		}
-
-	// 		return &accountsData, nil
-	// 	} else {
-
-	// 		apiHttpError := &ApiHttpError{}
-
-	// 		err = json.Unmarshal(responseBody, apiHttpError)
-
-	// 		if err != nil {
-	// 			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-	// 		}
-
-	// 		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
-	// 	}
-
-	// } else {
-
-	// 	return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, c.baseURL.String(), http.StatusInternalServerError, err.Error())
-	// }
 
 }

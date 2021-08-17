@@ -31,11 +31,16 @@ type apiErrorMessage struct {
 	Status       int
 }
 
+func isHttpCodeOK(httpCode int) bool {
+	return httpCode >= 200 && httpCode < 300
+}
+
 func (e *apiErrorMessage) Error() error {
-	statusOK := e.Status >= 200 && e.Status < 300
-	if !statusOK {
+
+	if !isHttpCodeOK(e.Status) {
 		return fmt.Errorf("%w | %d | %s", ApiHttpErrorType, e.Status, e.ErrorMessage)
 	}
+
 	return nil
 }
 
