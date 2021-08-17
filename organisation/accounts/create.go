@@ -4,90 +4,66 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 )
 
-func (c *Client) Create(accountData *AccountData) (*AccountData, error) {
+func (c *Client) Create(accountData *AccountData) (*AccountResponse, error) {
 
-	var err error
+	accountResponse := &AccountResponse{}
 
-	c.baseURL, err = c.baseURL.Parse(c.baseURL.Path)
-
-	if err != nil {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
+	if err := c.postJSON(accountsApi, accountData, accountResponse); err != nil {
+		return nil, err
 	}
 
-	return c.postRequest(accountData)
+	if err := accountResponse.Error(); err != nil {
+		return nil, err
+	}
+
+	return accountResponse, nil
 
 }
 
-func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
-
-	accountDataStr, err := json.Marshal(accountData)
-
-	if err != nil {
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
-	}
-
-	postBody := bytes.NewBuffer(accountDataStr)
-
-	customReq, err := http.NewRequest(http.MethodPost, c.baseURL.String(), postBody)
+func (c *Client) postJSON(config *apiConfig, apiReq interface{}, resp *AccountResponse) error {
+	httpResp, err := c.post(apiReq, config)
 
 	if err != nil {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", BuildingRequestError, c.baseURL.Path, http.StatusBadRequest, err.Error())
+		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
 	}
 
-	customReq.Header.Set("content-encoding", "application/json")
+	resp.apiErrorMessage.Status = httpResp.StatusCode
+
+	defer httpResp.Body.Close()
+
+	err = json.NewDecoder(httpResp.Body).Decode(resp)
+
+	if err != nil {
+		return fmt.Errorf("%w | %d | %s", UnmarshallingError, httpResp.StatusCode, err)
+	}
+
+	return nil
+}
+
+func (c *Client) post(apiReq interface{}, config *apiConfig) (*http.Response, error) {
+
+	body, err := json.Marshal(apiReq)
+	if err != nil {
+		return nil, err
+	}
+
+	c.baseURL, err = c.baseURL.Parse(config.path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	customReq, err := http.NewRequest(http.MethodPost, c.baseURL.String(), bytes.NewBuffer(body))
+
+	if err != nil {
+		return nil, err
+	}
+
+	customReq.Header.Set("Content-Type", "application/json")
 	customReq.Header.Set("user-agent", "golang-sdk")
 
-	httpResponse, err := c.HttpClient.Do(customReq)
-
-	if err != nil {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ExecutingRequestError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-	}
-
-	defer httpResponse.Body.Close()
-
-	var accountsData AccountData
-
-	if httpResponse != nil {
-
-		responseBody, err := ioutil.ReadAll(httpResponse.Body)
-
-		if err != nil {
-			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-		}
-
-		httpResponse.Body.Close()
-
-		if httpResponse.StatusCode == http.StatusOK {
-
-			err = json.Unmarshal(responseBody, &accountsData)
-
-			if err != nil {
-				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-			}
-
-			return &accountsData, nil
-		} else {
-
-			apiHttpError := &apiErrorMessage{}
-
-			err = json.Unmarshal(responseBody, apiHttpError)
-
-			if err != nil {
-				return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", UnmarshallingError, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
-			}
-
-			return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ApiHttpErrorType, httpResponse.Request.URL.Path, httpResponse.StatusCode, apiHttpError.ErrorMessage)
-		}
-
-	} else {
-
-		return nil, fmt.Errorf("%w | Path: %s returned %d with message %s", ResponseReadError, httpResponse.Request.URL.Path, httpResponse.StatusCode, err.Error())
-	}
+	return c.HttpClient.Do(customReq)
 }
