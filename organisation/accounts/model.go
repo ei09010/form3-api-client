@@ -2,6 +2,11 @@ package accounts
 
 import "time"
 
+type AccountResponse struct {
+	*AccountData
+	apiErrorMessage
+}
+
 type AccountData struct {
 	Data  *Data  `json:"data"`
 	Links *Links `json:"links"`
@@ -30,8 +35,4 @@ type AccountAttributes struct {
 
 type Links struct {
 	Self string `json:"self"`
-}
-
-type ApiHttpError struct {
-	ErrorMessage string `json:"error_message"`
 }

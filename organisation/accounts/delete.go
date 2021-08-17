@@ -73,7 +73,7 @@ func (c *Client) deleteRequest(queryStringParam map[string]string) error {
 
 		} else {
 
-			apiHttpError := &ApiHttpError{}
+			apiHttpError := &apiErrorMessage{}
 
 			err = json.Unmarshal(responseBody, apiHttpError)
 

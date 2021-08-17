@@ -75,7 +75,7 @@ func (c *Client) postRequest(accountData *AccountData) (*AccountData, error) {
 			return &accountsData, nil
 		} else {
 
-			apiHttpError := &ApiHttpError{}
+			apiHttpError := &apiErrorMessage{}
 
 			err = json.Unmarshal(responseBody, apiHttpError)
 

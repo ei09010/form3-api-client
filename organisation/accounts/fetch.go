@@ -13,36 +13,40 @@ var accountsApi = &apiConfig{
 	path: "/v1/organisation/accounts",
 }
 
-func (c *Client) Fetch(accountId uuid.UUID) (*AccountData, error) {
+func (c *Client) Fetch(accountId uuid.UUID) (*AccountResponse, error) {
 
-	var response struct {
-		*AccountData
-		apiErrorMessage
-	}
+	accountResponse := &AccountResponse{}
 
-	if err := c.getJSON(accountId, accountsApi, &response); err != nil {
-		return nil, fmt.Errorf("%w | %s", ResponseReadError, err.Error())
-	}
-
-	if err := response.Error(); err != nil {
+	if err := c.getJSON(accountId, accountsApi, accountResponse); err != nil {
 		return nil, err
 	}
 
-	return response.AccountData, nil
+	if err := accountResponse.Error(); err != nil {
+		return nil, err
+	}
+
+	return accountResponse, nil
 }
 
-func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp interface{}) error {
+func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp *AccountResponse) error {
 
 	httpResp, err := c.get(accountId, config)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
 	}
+
+	resp.apiErrorMessage.Status = httpResp.StatusCode
+
 	defer httpResp.Body.Close()
 
 	err = json.NewDecoder(httpResp.Body).Decode(resp)
 
-	return err
+	if err != nil {
+		return fmt.Errorf("%w | %d | %s", UnmarshallingError, httpResp.StatusCode, err)
+	}
+
+	return nil
 
 }
 

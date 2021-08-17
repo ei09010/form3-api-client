@@ -13,12 +13,11 @@ const (
 // Error Standard Types
 var (
 	// add api errror type per http status: NotFoundError; BadRequestError
-	ApiHttpErrorType = errors.New("API Error")
+	ApiHttpErrorType = errors.New("Error message returned by the API")
 	// HttpBadRequestErr     = errors.New("Http Bad Request error")
 	// HttpNotFoundErr       = errors.New("Http Not Found error")
 	// HttpInternalServerErr = errors.New("Http Internal Server error")
 	UnmarshallingError    = errors.New("UnmarshallingError")
-	baseURLParsingError   = errors.New("baseURLParsingError")
 	PathParsingError      = errors.New("PathParsingError")
 	BuildingRequestError  = errors.New("BuildingRequestError")
 	ExecutingRequestError = errors.New("ExecutingRequestError")
@@ -29,10 +28,15 @@ var (
 
 type apiErrorMessage struct {
 	ErrorMessage string `json:"error_message"`
+	Status       int
 }
 
 func (e *apiErrorMessage) Error() error {
-	return fmt.Errorf("Error message returned by the API: %s", e.ErrorMessage)
+	statusOK := e.Status >= 200 && e.Status < 300
+	if !statusOK {
+		return fmt.Errorf("%w | %d | %s", ApiHttpErrorType, e.Status, e.ErrorMessage)
+	}
+	return nil
 }
 
 // type ClientError struct {
