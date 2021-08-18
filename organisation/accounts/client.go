@@ -12,6 +12,11 @@ type apiConfig struct {
 	path string
 }
 
+var accountsApi = &apiConfig{
+	host: "https://api.form3.tech",
+	path: "/v1/organisation/accounts",
+}
+
 // ClientOption is the type of constructor options for NewClient(...)
 type ClientOption func(*Client) error
 

@@ -8,11 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var accountsApi = &apiConfig{
-	host: "https://api.form3.tech",
-	path: "/v1/organisation/accounts",
-}
-
 // Fetch retrieves account related information using an accountId
 func (c *Client) Fetch(accountId uuid.UUID) (*AccountResponse, error) {
 
