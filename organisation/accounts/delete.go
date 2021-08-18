@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Delete issues an API request to delete a an account with a given accountId and version number
 func (c *Client) Delete(accountId uuid.UUID, version int) error {
 
 	return c.deleteJSON(accountId, map[string]string{"version": strconv.Itoa(version)}, accountsApi)

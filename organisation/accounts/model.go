@@ -2,6 +2,7 @@ package accounts
 
 import "time"
 
+// Response containing all the information related to accounts
 type AccountResponse struct {
 	*AccountData
 	apiErrorMessage

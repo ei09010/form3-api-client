@@ -13,6 +13,7 @@ var accountsApi = &apiConfig{
 	path: "/v1/organisation/accounts",
 }
 
+// Fetch retrieves account related information using an accountId
 func (c *Client) Fetch(accountId uuid.UUID) (*AccountResponse, error) {
 
 	accountResponse := &AccountResponse{}

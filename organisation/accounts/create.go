@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// Create issues an API request to store given account related information
 func (c *Client) Create(accountData *AccountData) (*AccountResponse, error) {
 
 	accountResponse := &AccountResponse{}

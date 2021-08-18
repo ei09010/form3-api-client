@@ -12,8 +12,10 @@ type apiConfig struct {
 	path string
 }
 
+// ClientOption is the type of constructor options for NewClient(...)
 type ClientOption func(*Client) error
 
+// Client may be used to make requests to the Form3 API
 type Client struct {
 	baseURL    *url.URL
 	timeout    time.Duration
@@ -22,6 +24,7 @@ type Client struct {
 	}
 }
 
+// NewClient constructs a new Client which can make requests to the Form3 API
 func NewClient(clientOptions ...ClientOption) (*Client, error) {
 
 	c := &Client{
