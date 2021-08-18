@@ -234,6 +234,20 @@ func TestCreateErrorCases(t *testing.T) {
 			expectedErrorType:    UnmarshallingError,
 			accountPayload:       generateValidGenericAccountData(),
 		},
+		"Handler timeout causes the request to fail": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			messageResponse:      "",
+			requestPath:          `/v1/organisation/accounts`,
+			expectedErrorMessage: `Requesting "handler url": http: Handler timeout`,
+			expectedHttpStatus:   http.StatusInternalServerError,
+			expectedErrorType:    ExecutingRequestError,
+			doError: &url.Error{
+				Err: http.ErrHandlerTimeout,
+				Op:  "Requesting",
+				URL: "handler url",
+			},
+			accountPayload: generateValidGenericAccountData(),
+		},
 	}
 
 	for _, errCase := range errorCases {

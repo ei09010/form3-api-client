@@ -141,6 +141,29 @@ func TestDeleteErrorCases(t *testing.T) {
 			expectedErrorMessage: "invalid version number",
 			expectedErrorType:    ApiHttpErrorType,
 		},
+		"Handler timeout causes the request to fail": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusInternalServerError,
+			requestPath:          `/v1/organisation/accounts`,
+			messageResponse:      "",
+			expectedErrorMessage: `Requesting "handler url": http: Handler timeout`,
+			expectedErrorType:    ExecutingRequestError,
+			doError: &url.Error{
+				Err: http.ErrHandlerTimeout,
+				Op:  "Requesting",
+				URL: "handler url",
+			},
+		},
+		"Unmarshalling Error reading error response message": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			version:              0,
+			expectedHttpStatus:   http.StatusBadRequest,
+			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`,
+			messageResponse:      `rror":"invalid version number"}`,
+			expectedErrorMessage: "invalid character 'r' looking for beginning of value",
+			expectedErrorType:    UnmarshallingError,
+		},
 	}
 
 	for _, errCase := range errorCases {

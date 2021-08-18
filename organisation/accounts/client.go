@@ -65,15 +65,3 @@ func WithBaseURL(baseURL string) ClientOption {
 		return nil
 	}
 }
-
-func (c *Client) do(req *http.Request) (*http.Response, error) {
-	httpClient := c.HttpClient
-	if httpClient == nil {
-		httpClient = &http.Client{}
-	}
-
-	req.Header.Set("content-encoding", "application/json; charset=utf-8")
-	req.Header.Set("user-agent", "golang-sdk")
-
-	return httpClient.Do(req)
-}

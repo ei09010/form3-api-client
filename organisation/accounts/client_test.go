@@ -21,11 +21,12 @@ func TestClientSuccessCases(t *testing.T) {
 		timeoutValue         time.Duration
 	}{
 		"Valid Url": {
-			baseURL:        "http://localhost:8080",
-			expectedScheme: "http",
-			expectedPath:   "",
-			expectedHost:   "localhost:8080",
-			timeoutValue:   time.Duration(5 * time.Millisecond),
+			baseURL:              "http://localhost:8080",
+			expectedScheme:       "http",
+			expectedPath:         "",
+			expectedHost:         "localhost:8080",
+			argumentTimeoutValue: time.Duration(5 * time.Millisecond),
+			timeoutValue:         time.Duration(5 * time.Millisecond),
 		},
 		"Valid Url and Zero Timeout Value": {
 			baseURL:              "http://localhost:8080",
@@ -35,19 +36,19 @@ func TestClientSuccessCases(t *testing.T) {
 			argumentTimeoutValue: time.Duration(0),
 			timeoutValue:         DefaultTimeOutValue,
 		},
-		"Valid Url and Invalid Timeout Value": {
+		"Valid Url and Negative Timeout Value": {
 			baseURL:              "http://localhost:8080",
 			expectedScheme:       "http",
 			expectedPath:         "",
 			expectedHost:         "localhost:8080",
-			argumentTimeoutValue: time.Duration(-1),
+			argumentTimeoutValue: time.Duration(-1 * time.Millisecond),
 			timeoutValue:         DefaultTimeOutValue,
 		},
 	}
 
 	for _, tt := range errorCases {
 
-		accountClient, err := NewClient(WithBaseURL(tt.baseURL), WithTimeout(time.Duration(tt.timeoutValue)))
+		accountClient, err := NewClient(WithBaseURL(tt.baseURL), WithTimeout(time.Duration(tt.argumentTimeoutValue)))
 
 		if err != nil {
 			t.Errorf("Returned reponse: got %v want %v",
