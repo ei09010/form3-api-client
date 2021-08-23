@@ -68,5 +68,5 @@ func (c *Client) deleteRequest(accountId uuid.UUID, queryStringParam map[string]
 
 	customReq.URL.Path = strings.Join([]string{customReq.URL.Path, customReq.URL.RawQuery}, "?")
 
-	return c.HttpClient.Do(customReq)
+	return c.httpClient.Do(customReq)
 }

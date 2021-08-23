@@ -17,7 +17,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	// "gorm.io/gorm"
 )
 
 // prepare

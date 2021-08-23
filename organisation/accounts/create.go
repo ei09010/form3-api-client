@@ -66,5 +66,5 @@ func (c *Client) post(apiReq interface{}, config *apiConfig) (*http.Response, er
 	customReq.Header.Set("Content-Type", "application/json")
 	customReq.Header.Set("user-agent", "golang-sdk")
 
-	return c.HttpClient.Do(customReq)
+	return c.httpClient.Do(customReq)
 }

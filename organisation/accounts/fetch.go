@@ -61,6 +61,6 @@ func (c *Client) get(accountId uuid.UUID, config *apiConfig) (*http.Response, er
 		return nil, err
 	}
 
-	return c.HttpClient.Do(customReq)
+	return c.httpClient.Do(customReq)
 
 }

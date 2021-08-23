@@ -264,7 +264,7 @@ func TestCreateErrorCases(t *testing.T) {
 
 		accountsClient := &Client{
 			baseURL:    &url.URL{Path: errCase.requestPath},
-			HttpClient: accountErrClient,
+			httpClient: accountErrClient,
 		}
 
 		// Act

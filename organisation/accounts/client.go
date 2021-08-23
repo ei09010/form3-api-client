@@ -24,7 +24,7 @@ type ClientOption func(*Client) error
 type Client struct {
 	baseURL    *url.URL
 	timeout    time.Duration
-	HttpClient interface {
+	httpClient interface {
 		Do(req *http.Request) (*http.Response, error)
 	}
 }
@@ -33,7 +33,7 @@ type Client struct {
 func NewClient(clientOptions ...ClientOption) (*Client, error) {
 
 	c := &Client{
-		HttpClient: &http.Client{},
+		httpClient: &http.Client{},
 	}
 
 	for _, option := range clientOptions {
