@@ -51,17 +51,19 @@ func (c *Client) post(apiReq interface{}, config *apiConfig) (*http.Response, er
 		return nil, err
 	}
 
-	c.baseURL, err = c.baseURL.Parse(config.host + config.path)
+	if c.baseURL.Host == "" {
+
+		c.baseURL, err = c.baseURL.Parse(config.host + config.path)
+
+	} else {
+
+		c.baseURL, err = c.baseURL.Parse(config.path)
+
+	}
 
 	if err != nil {
 		return nil, err
 	}
-
-	// c.baseURL, err = c.baseURL.Parse(config.host)
-
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	customReq, err := http.NewRequest(http.MethodPost, c.baseURL.String(), bytes.NewBuffer(body))
 

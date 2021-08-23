@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -26,6 +27,26 @@ type e2eTestSuite struct {
 	dbConn          *gorm.DB
 }
 
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	teardown()
+	os.Exit(code)
+}
+
+func setup() {
+	// Do something here.
+
+	fmt.Printf("\033[1;36m%s\033[0m", "> Setup completed\n")
+}
+
+func teardown() {
+	// Do something here.
+
+	fmt.Printf("\033[1;36m%s\033[0m", "> Teardown completed")
+	fmt.Printf("\n")
+}
+
 func TestE2ETestSuite(t *testing.T) {
 	suite.Run(t, &e2eTestSuite{})
 }
@@ -33,7 +54,7 @@ func TestE2ETestSuite(t *testing.T) {
 func (s *e2eTestSuite) SetupSuite() {
 
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
-		"localhost", "5432", "root", "interview_accountapi", "password") //Build connection string
+		"localhost", "5432", "root", "interview_accountapi", "password")
 	fmt.Println(dbUri)
 
 	conn, err := gorm.Open("postgres", dbUri)
@@ -59,7 +80,7 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	s.NoError(s.dbConn.Create(storedTestAccount).Error)
 
-	exectedAccountData := generatedExpectedAccountToBeReturnedByAPI(id)
+	expectedAccountData := generatedExpectedAccountToBeReturnedByAPI(id)
 
 	// Act
 
@@ -69,35 +90,8 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	// Assert
 
-	assert.Equal(s.T(), exectedAccountData.Data.ID, fetchedAccountData.Data.ID, "ID from the fetched account, should match the expected to be returned by the API")
+	assertAccountData(s.Suite, expectedAccountData, fetchedAccountData)
 
-	assert.NotNil(s.T(), fetchedAccountData.Data.ModifiedOn, "ModifiedOn from the fetched account, should not be nil")
-
-	assert.NotNil(s.T(), fetchedAccountData.Data.CreatedOn, "CreatedOn from the fetched account, should not be nil")
-
-	assert.Equal(s.T(), exectedAccountData.Data.OrganisationID, fetchedAccountData.Data.OrganisationID, "OrganisationId from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Type, fetchedAccountData.Data.Type, "Type from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Version, fetchedAccountData.Data.Version, "Version from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Links.Self, fetchedAccountData.Links.Self, "Self links from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.AccountClassification, fetchedAccountData.Data.Attributes.AccountClassification, "AccountClassification from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.AlternativeNames, fetchedAccountData.Data.Attributes.AlternativeNames, "AlternativeNames from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.BankID, fetchedAccountData.Data.Attributes.BankID, "BankId from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.BankIDCode, fetchedAccountData.Data.Attributes.BankIDCode, "BankIdCode from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.BaseCurrency, fetchedAccountData.Data.Attributes.BaseCurrency, "BaseCurrency from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.Bic, fetchedAccountData.Data.Attributes.Bic, "Bic from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.Country, fetchedAccountData.Data.Attributes.Country, "Country from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), exectedAccountData.Data.Attributes.Name, fetchedAccountData.Data.Attributes.Name, "Name from the fetched account, should match the expected to be returned by the API")
 }
 
 func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
@@ -123,17 +117,40 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 
 	// Assert
 
-	// assert stored account data
-	//v this is a placeholder
-	fmt.Printf("%v", storedAccountData)
+	assertAccountData(s.Suite, accountDataToStore, storedAccountData)
+}
+
+func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
+
+	// Arrange
+
+	// this url has to be a env variable
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+
+	s.Require().NoError(err)
+
+	id, err := uuid.NewUUID()
+
+	s.Require().NoError(err)
+
+	storedTestAccount := generateAccountDataToStore(id)
+
+	s.NoError(s.dbConn.Create(storedTestAccount).Error)
+
+	expectedVersion := 0
+
+	fmt.Println(id.String())
+
+	// Act
+
+	err = accountsClient.Delete(id, expectedVersion)
+
+	s.Require().NoError(err)
 }
 
 func (*Account) TableName() string {
 	return "Account"
 }
-
-// JSONB Interface for JSONB Field of Account Table
-// type JSONB []interface{}
 
 // Value Marshal
 func (a AccountAttributes) Value() (driver.Value, error) {
@@ -268,4 +285,37 @@ type AccountAttributes struct {
 
 type Links struct {
 	Self string `json:"self" gorm:"type:self"`
+}
+
+func assertAccountData(s suite.Suite, expectedAccountData *accounts.AccountData, receivedAccountData *accounts.AccountResponse) {
+
+	assert.Equal(s.T(), expectedAccountData.Data.ID, receivedAccountData.Data.ID, "ID from the fetched account, should match the expected to be returned by the API")
+
+	assert.NotNil(s.T(), receivedAccountData.Data.ModifiedOn, "ModifiedOn from the fetched account, should not be nil")
+
+	assert.NotNil(s.T(), receivedAccountData.Data.CreatedOn, "CreatedOn from the fetched account, should not be nil")
+
+	assert.Equal(s.T(), expectedAccountData.Data.OrganisationID, receivedAccountData.Data.OrganisationID, "OrganisationId from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Type, receivedAccountData.Data.Type, "Type from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Version, receivedAccountData.Data.Version, "Version from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Links.Self, receivedAccountData.Links.Self, "Self links from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.AccountClassification, receivedAccountData.Data.Attributes.AccountClassification, "AccountClassification from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.AlternativeNames, receivedAccountData.Data.Attributes.AlternativeNames, "AlternativeNames from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.BankID, receivedAccountData.Data.Attributes.BankID, "BankId from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.BankIDCode, receivedAccountData.Data.Attributes.BankIDCode, "BankIdCode from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.BaseCurrency, receivedAccountData.Data.Attributes.BaseCurrency, "BaseCurrency from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.Bic, receivedAccountData.Data.Attributes.Bic, "Bic from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.Country, receivedAccountData.Data.Attributes.Country, "Country from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), expectedAccountData.Data.Attributes.Name, receivedAccountData.Data.Attributes.Name, "Name from the fetched account, should match the expected to be returned by the API")
 }

@@ -68,5 +68,10 @@ func (c *Client) deleteRequest(accountId uuid.UUID, queryStringParam map[string]
 
 	customReq.URL.Path = strings.Join([]string{customReq.URL.Path, customReq.URL.RawQuery}, "?")
 
+	customReq.Header.Set("Content-Type", "application/json")
+	customReq.Header.Set("Accept", "*/*")
+	customReq.Header.Set("Accept-Encoding", "gzip, deflate, br")
+	customReq.Header.Set("user-agent", "golang-sdk")
+
 	return c.httpClient.Do(customReq)
 }
