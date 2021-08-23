@@ -13,9 +13,8 @@ import (
 	// _ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 
-	// gorm "gorm.io/gorm"
-
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -32,14 +31,6 @@ func TestE2ETestSuite(t *testing.T) {
 }
 
 func (s *e2eTestSuite) SetupSuite() {
-
-	//gorm original
-	// //"postgres://postgres:postgres@localhost/Account?sslmode=disable"
-	// s.dbConnectionStr = "host=localhost user=root password=password port=5432"
-	// //s.dbConnectionStr = "host=localhost user=interview_accountapi_user password=123 dbname=interview_accountapi port=5432" //config.DBConnectionURL()
-	// db, err := gorm.Open(postgres.Open(s.dbConnectionStr), &gorm.Config{})
-	// s.Require().NoError(err)
-	// s.dbConn = db
 
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
 		"localhost", "5432", "root", "interview_accountapi", "password") //Build connection string
@@ -64,34 +55,67 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	s.Require().NoError(err)
 
-	temp := generateAccountDataToStore(id)
+	storedTestAccount := generateAccountDataToStore(id)
 
-	fmt.Println(id.String())
+	s.NoError(s.dbConn.Create(storedTestAccount).Error)
 
-	s.NoError(s.dbConn.Create(temp).Error)
+	exectedAccountData := generatedExpectedAccountToBeReturnedByAPI(id)
 
 	// Act
 
-	storedAccountData, err := accountsClient.Fetch(id)
+	fetchedAccountData, err := accountsClient.Fetch(id)
 
 	s.Require().NoError(err)
 
 	// Assert
 
-	// assert stored account data
-	fmt.Printf("%v", storedAccountData)
+	assert.Equal(s.T(), exectedAccountData.Data.ID, fetchedAccountData.Data.ID, "ID from the fetched account, should match the expected to be returned by the API")
+
+	assert.NotNil(s.T(), fetchedAccountData.Data.ModifiedOn, "ModifiedOn from the fetched account, should not be nil")
+
+	assert.NotNil(s.T(), fetchedAccountData.Data.CreatedOn, "CreatedOn from the fetched account, should not be nil")
+
+	assert.Equal(s.T(), exectedAccountData.Data.OrganisationID, fetchedAccountData.Data.OrganisationID, "OrganisationId from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Type, fetchedAccountData.Data.Type, "Type from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Version, fetchedAccountData.Data.Version, "Version from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Links.Self, fetchedAccountData.Links.Self, "Self links from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.AccountClassification, fetchedAccountData.Data.Attributes.AccountClassification, "AccountClassification from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.AlternativeNames, fetchedAccountData.Data.Attributes.AlternativeNames, "AlternativeNames from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.BankID, fetchedAccountData.Data.Attributes.BankID, "BankId from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.BankIDCode, fetchedAccountData.Data.Attributes.BankIDCode, "BankIdCode from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.BaseCurrency, fetchedAccountData.Data.Attributes.BaseCurrency, "BaseCurrency from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.Bic, fetchedAccountData.Data.Attributes.Bic, "Bic from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.Country, fetchedAccountData.Data.Attributes.Country, "Country from the fetched account, should match the expected to be returned by the API")
+
+	assert.Equal(s.T(), exectedAccountData.Data.Attributes.Name, fetchedAccountData.Data.Attributes.Name, "Name from the fetched account, should match the expected to be returned by the API")
 }
 
 func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 
 	// Arrange
 
-	accountDataToStore := generateValidGenericAccountData()
-
-	// Act
+	// this url has to be a env variable
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
 
 	s.Require().NoError(err)
+
+	id, err := uuid.NewUUID()
+
+	s.Require().NoError(err)
+
+	accountDataToStore := generatedExpectedAccountToBeReturnedByAPI(id)
+
+	// Act
 
 	storedAccountData, err := accountsClient.Create(accountDataToStore)
 
@@ -108,22 +132,23 @@ func (*Account) TableName() string {
 	return "Account"
 }
 
-// JSONB Interface for JSONB Field of yourTableName Table
-type JSONB []interface{}
+// JSONB Interface for JSONB Field of Account Table
+// type JSONB []interface{}
 
 // Value Marshal
-func (a JSONB) Value() (driver.Value, error) {
+func (a AccountAttributes) Value() (driver.Value, error) {
 	return json.Marshal(a)
 }
 
 // Scan Unmarshal
-func (a *JSONB) Scan(value interface{}) error {
+func (a *AccountAttributes) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
 	return json.Unmarshal(b, &a)
 }
+
 func generateAccountDataToStore(id uuid.UUID) *Account {
 
 	expectedAccountClassification := "Personal"
@@ -135,75 +160,42 @@ func generateAccountDataToStore(id uuid.UUID) *Account {
 	expectedCountry := "GB"
 	expectedName := []string{"Name of the account holder, up to four lines possible."}
 
-	// timeLayout := "2006-01-02 15:04:05 -0700 MST"
-	//expectedCreatedOn := "2021-07-31 22:09:02 +0000 UTC"
-	//expectedCreatedOnTime, _ := time.Parse(timeLayout, expectedCreatedOn)
-
-	//expectedId := "86b3264e-0121-11ec-9a03-0242ac130003"
-
-	// expectedModifiedOn := "2021-07-31 22:09:02 +0000 UTC"
-	// expectedModifiedOnTime, _ := time.Parse(timeLayout, expectedModifiedOn)
-
-	expectedOrganisationId := "fc1bd6f5-c3f5-44b2-b677-acd23cdde73c"
-	//expectedType := "accounts"
+	expectedOrganisationId := "eb0bd6f5-c3f5-44b2-b677-acd23cdde73c"
 	expectedVersion := 0
-	//expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
-
-	byteArr, _ := json.Marshal(&AccountAttributes{
-		AccountClassification: expectedAccountClassification,
-		AlternativeNames:      expectedAlternativeNames,
-		BankID:                expectedBankId,
-		BankIDCode:            expectedBankIdCode,
-		BaseCurrency:          expectedBaseCurrency,
-		Bic:                   expectedBic,
-		Country:               expectedCountry,
-		Name:                  expectedName,
-	})
-
-	recordJs := json.RawMessage(string(byteArr))
 
 	return &Account{
-		Record: JSONB{recordJs},
-		// record: JSONB{
-		// 	"account_classification":         expectedAccountClassification,
-		// 	"alternative_bank_account_names": expectedAlternativeNames,
-		// 	"bank_id":                        expectedBankId,
-		// 	"bank_id_code":                   expectedBankIdCode,
-		// 	"base_currency":                  expectedBaseCurrency,
-		// 	"bic":                            expectedBic,
-		// 	"country":                        expectedCountry,
-		// 	"name":                           expectedName,
-		// }, //postgres.Jsonb{RawMessage: recordJs},
 		ID:             id,
 		ModifiedOn:     time.Now(),
+		CreatedOn:      time.Now(),
 		IsDeleted:      false,
 		IsLocked:       false,
 		OrganisationID: expectedOrganisationId,
 		Version:        expectedVersion,
+		Record: &AccountAttributes{
+			AccountClassification: expectedAccountClassification,
+			AlternativeNames:      expectedAlternativeNames,
+			BankID:                expectedBankId,
+			BankIDCode:            expectedBankIdCode,
+			BaseCurrency:          expectedBaseCurrency,
+			Bic:                   expectedBic,
+			Country:               expectedCountry,
+			Name:                  expectedName,
+		},
 	}
 }
 
 type Account struct {
-	ID             uuid.UUID `gorm:"unique"`
-	ModifiedOn     time.Time `json:"modified_on" gorm:"type:modified_on"`
-	OrganisationID string    `json:"organisation_id" gorm:"type:organisation_id"`
-	Version        int       `json:"version" gorm:"type:version"`
-	IsDeleted      bool      `gorm:"type:is_deleted"`
-	IsLocked       bool      `gorm:"type:is_locked"`
-	Record         JSONB     `gorm:"type:jsonb" json:"record"` //`sql:"type:JSONB"` //JSONB     `gorm:"type:jsonb"`
-	//AccountAttributes *AccountAttributes `gorm:"type:record"`
+	ID             uuid.UUID          `gorm:"unique"`
+	ModifiedOn     time.Time          `json:"modified_on" gorm:"type:modified_on"`
+	CreatedOn      time.Time          `json:"created_on" gorm:"type:created_on"`
+	OrganisationID string             `json:"organisation_id" gorm:"type:organisation_id"`
+	Version        int                `json:"version" gorm:"type:version"`
+	IsDeleted      bool               `gorm:"type:is_deleted"`
+	IsLocked       bool               `gorm:"type:is_locked"`
+	Record         *AccountAttributes `gorm:"type:jsonb" json:"record"`
 }
 
-// {"bic": "NWBKGB22",
-// "name": ["Name of the account holder, up to four lines possible."],
-// "bank_id": "400300",
-// "country": "GB",
-// "bank_id_code": "GBDSC",
-// "base_currency": "GBP",
-// "account_classification": "Personal",
-// "alternative_bank_account_names": null}
-
-func generateValidGenericAccountData() *accounts.AccountData {
+func generatedExpectedAccountToBeReturnedByAPI(id uuid.UUID) *accounts.AccountData {
 
 	expectedAccountClassification := "Personal"
 	expectedAlternativeNames := []string{"Alternative Names."}
@@ -218,7 +210,7 @@ func generateValidGenericAccountData() *accounts.AccountData {
 	expectedCreatedOn := "2021-07-31 22:09:02 +0000 UTC"
 	expectedCreatedOnTime, _ := time.Parse(timeLayout, expectedCreatedOn)
 
-	expectedId := "be38e265-9607-5c5c-a0e5-3003ea9cc4dd"
+	expectedId := id
 
 	expectedModifiedOn := "2021-07-31 22:09:02 +0000 UTC"
 	expectedModifiedOnTime, _ := time.Parse(timeLayout, expectedModifiedOn)
@@ -226,7 +218,7 @@ func generateValidGenericAccountData() *accounts.AccountData {
 	expectedOrganisationId := "eb0bd6f5-c3f5-44b2-b677-acd23cdde73c"
 	expectedType := "accounts"
 	expectedVersion := 0
-	expectedSelf := "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
+	expectedSelf := fmt.Sprintf("/v1/organisation/accounts/%s", id.String())
 
 	return &accounts.AccountData{
 		Data: &accounts.Data{
@@ -241,7 +233,7 @@ func generateValidGenericAccountData() *accounts.AccountData {
 				Name:                  expectedName,
 			},
 			CreatedOn:      expectedCreatedOnTime,
-			ID:             expectedId,
+			ID:             expectedId.String(),
 			ModifiedOn:     expectedModifiedOnTime,
 			OrganisationID: expectedOrganisationId,
 			Type:           expectedType,
@@ -254,7 +246,6 @@ func generateValidGenericAccountData() *accounts.AccountData {
 }
 
 type Data struct {
-	gorm.Model
 	Attributes     *AccountAttributes `json:"attributes" gorm:"type:attributes"`
 	CreatedOn      time.Time          `json:"created_on" gorm:"type:created_on"`
 	ID             string             `json:"id" gorm:"type:id"`
@@ -265,17 +256,16 @@ type Data struct {
 }
 
 type AccountAttributes struct {
-	AccountClassification string   `json:"account_classification" gorm:"type:account_classification"`
-	AlternativeNames      []string `json:"alternative_bank_account_names" gorm:"type:alternative_bank_account_names"`
-	BankID                string   `json:"bank_id" gorm:"type:bank_id"`
-	BankIDCode            string   `json:"bank_id_code" gorm:"type:bank_id_code"`
-	BaseCurrency          string   `json:"base_currency" gorm:"type:base_currency"`
-	Bic                   string   `json:"bic" gorm:"type:bic"`
-	Country               string   `json:"country" gorm:"type:country"`
-	Name                  []string `json:"name" gorm:"type:name"`
+	AccountClassification string   `json:"account_classification,omitempty"`
+	AlternativeNames      []string `json:"alternative_bank_account_names,omitempty"`
+	BankID                string   `json:"bank_id,omitempty"`
+	BankIDCode            string   `json:"bank_id_code,omitempty"`
+	BaseCurrency          string   `json:"base_currency,omitempty"`
+	Bic                   string   `json:"bic,omitempty"`
+	Country               string   `json:"country,omitempty"`
+	Name                  []string `json:"name,omitempty"`
 }
 
 type Links struct {
-	gorm.Model
 	Self string `json:"self" gorm:"type:self"`
 }

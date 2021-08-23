@@ -34,6 +34,7 @@ func NewClient(clientOptions ...ClientOption) (*Client, error) {
 
 	c := &Client{
 		httpClient: &http.Client{},
+		baseURL:    &url.URL{},
 	}
 
 	for _, option := range clientOptions {

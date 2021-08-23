@@ -32,7 +32,7 @@ type Data struct {
 
 type AccountAttributes struct {
 	AccountClassification string   `json:"account_classification" gorm:"type:account_classification"`
-	AlternativeNames      []string `json:"alternative_bank_account_names" gorm:"type:alternative_names"`
+	AlternativeNames      []string `json:"alternative_names" gorm:"type:alternative_names"`
 	BankID                string   `json:"bank_id" gorm:"type:bank_id"`
 	BankIDCode            string   `json:"bank_id_code" gorm:"type:bank_id_code"`
 	BaseCurrency          string   `json:"base_currency" gorm:"type:base_currency"`
