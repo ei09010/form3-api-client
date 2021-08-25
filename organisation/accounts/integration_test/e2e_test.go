@@ -21,26 +21,6 @@ type e2eTestSuite struct {
 	dbConn          *gorm.DB
 }
 
-// func TestMain(m *testing.M) {
-// 	setup()
-// 	code := m.Run()
-// 	teardown()
-// 	os.Exit(code)
-// }
-
-// func setup() {
-// 	// Do something here.
-
-// 	fmt.Printf("\033[1;36m%s\033[0m", "> Setup completed\n")
-// }
-
-// func teardown() {
-// 	// Do something here.
-
-// 	fmt.Printf("\033[1;36m%s\033[0m", "> Teardown completed")
-// 	fmt.Printf("\n")
-// }
-
 func TestE2ETestSuite(t *testing.T) {
 	suite.Run(t, &e2eTestSuite{})
 }
@@ -49,7 +29,6 @@ func (s *e2eTestSuite) SetupSuite() {
 
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
 		"localhost", "5432", "root", "interview_accountapi", "password")
-	fmt.Println(dbUri)
 
 	conn, err := gorm.Open("postgres", dbUri)
 	if err != nil {
@@ -57,12 +36,27 @@ func (s *e2eTestSuite) SetupSuite() {
 	}
 
 	s.dbConn = conn
+
+	fmt.Printf(" > TestSuite Setup is complete with the following connection to DB: \n %s", fmt.Sprint(dbUri))
+}
+
+func (s *e2eTestSuite) TearDownSuite() {
+
+	s.dbConn.Delete(&Account{})
+
+	fmt.Printf(" > TestSuite TearDown is complete")
+
+}
+
+func (s *e2eTestSuite) SetupTest() {
+	s.dbConn.Delete(&Account{})
 }
 
 // Fetch
 func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	// Arrange
+
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
 
 	s.Require().NoError(err)
