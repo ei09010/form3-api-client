@@ -17,10 +17,14 @@ func TestDelete_ExistingAccountId_Returns200WithNoBody(t *testing.T) {
 
 	validAccountId := "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 	validVersion := 0
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=0`
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+	expectedRawQuery := `version=0`
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+
+		if r.URL.RawQuery == expectedRawQuery {
+			w.WriteHeader(http.StatusOK)
+		}
 	})
 
 	defer ts.Close()
@@ -49,10 +53,14 @@ func TestDelete_NotExistingAccountId_Returns404WithNoBody(t *testing.T) {
 
 	validAccountId := "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 	validVersion := 0
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=0`
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+	expectedRawQuery := `version=0`
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
+
+		if r.URL.RawQuery == expectedRawQuery {
+			w.WriteHeader(http.StatusNotFound)
+		}
 	})
 
 	defer ts.Close()
@@ -78,10 +86,13 @@ func TestDelete_InternalServerError_Returns500WithNoBody(t *testing.T) {
 
 	validAccountId := "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"
 	validVersion := 0
-	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc?version=0`
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+	expectedRawQuery := `version=0`
 
 	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
+		if r.URL.RawQuery == expectedRawQuery {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	})
 
 	defer ts.Close()

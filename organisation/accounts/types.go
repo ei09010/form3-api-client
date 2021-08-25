@@ -20,13 +20,13 @@ var (
 	clientCreationError   = errors.New("Unable to create the client")
 )
 
-// apiErrorMessage contains the error message returned by the Form3 API and it's http code. This is used internally.
-type apiErrorMessage struct {
+// apiCommonResult contains the error message returned by the Form3 API and it's http code. This is used internally.
+type apiCommonResult struct {
 
 	// ErrorMessage is the explanatory field added when API returns an error.
 	ErrorMessage string `json:"error_message"`
 
-	// Status is a field added within the client. It concerns the http status code from the client call and
+	// Status is a field mapped from the http response status code. It concerns the http status code from the client call and
 	// is meant to help you track down any bug
 	Status int
 }
@@ -36,7 +36,7 @@ func isHttpCodeOK(httpCode int) bool {
 }
 
 // Error returns an error if this object has a Status not between 200 and 300
-func (e *apiErrorMessage) Error() error {
+func (e *apiCommonResult) Error() error {
 
 	if !isHttpCodeOK(e.Status) {
 		return fmt.Errorf("%w | %d | %s", ApiHttpErrorType, e.Status, e.ErrorMessage)

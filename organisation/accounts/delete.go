@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -30,7 +30,7 @@ func (c *Client) deleteJSON(accountId uuid.UUID, queryStringParam map[string]str
 		return nil
 	}
 
-	resp := &apiErrorMessage{}
+	resp := &apiCommonResult{}
 
 	err = json.NewDecoder(httpResp.Body).Decode(resp)
 
@@ -53,24 +53,25 @@ func (c *Client) deleteRequest(accountId uuid.UUID, queryStringParam map[string]
 		return nil, err
 	}
 
+	q, err := url.ParseQuery(c.baseURL.RawQuery)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range queryStringParam {
+		q.Add(k, v)
+	}
+
+	c.baseURL.RawQuery = q.Encode()
+
 	customReq, err := http.NewRequest(http.MethodDelete, c.baseURL.String(), nil)
 
 	if err != nil {
 		return nil, err
 	}
-	urlQuery := customReq.URL.Query()
-
-	for k, v := range queryStringParam {
-		urlQuery.Add(k, v)
-	}
-
-	customReq.URL.RawQuery = urlQuery.Encode()
-
-	customReq.URL.Path = strings.Join([]string{customReq.URL.Path, customReq.URL.RawQuery}, "?")
 
 	customReq.Header.Set("Content-Type", "application/json")
-	customReq.Header.Set("Accept", "*/*")
-	customReq.Header.Set("Accept-Encoding", "gzip, deflate, br")
 	customReq.Header.Set("user-agent", "golang-sdk")
 
 	return c.httpClient.Do(customReq)

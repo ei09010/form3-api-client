@@ -1,17 +1,11 @@
-package integration_test
+package integration
 
 import (
-	"database/sql/driver"
 	"ei09010/form3-api-client/organisation/accounts"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/jinzhu/gorm"
-	// _ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 
 	"github.com/google/uuid"
@@ -27,25 +21,25 @@ type e2eTestSuite struct {
 	dbConn          *gorm.DB
 }
 
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	teardown()
-	os.Exit(code)
-}
+// func TestMain(m *testing.M) {
+// 	setup()
+// 	code := m.Run()
+// 	teardown()
+// 	os.Exit(code)
+// }
 
-func setup() {
-	// Do something here.
+// func setup() {
+// 	// Do something here.
 
-	fmt.Printf("\033[1;36m%s\033[0m", "> Setup completed\n")
-}
+// 	fmt.Printf("\033[1;36m%s\033[0m", "> Setup completed\n")
+// }
 
-func teardown() {
-	// Do something here.
+// func teardown() {
+// 	// Do something here.
 
-	fmt.Printf("\033[1;36m%s\033[0m", "> Teardown completed")
-	fmt.Printf("\n")
-}
+// 	fmt.Printf("\033[1;36m%s\033[0m", "> Teardown completed")
+// 	fmt.Printf("\n")
+// }
 
 func TestE2ETestSuite(t *testing.T) {
 	suite.Run(t, &e2eTestSuite{})
@@ -65,6 +59,7 @@ func (s *e2eTestSuite) SetupSuite() {
 	s.dbConn = conn
 }
 
+// Fetch
 func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	// Arrange
@@ -94,6 +89,29 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 }
 
+func (s *e2eTestSuite) TestFetch_FetchesNonExistentAccount_Returns404Error() {
+
+	// Arrange
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+
+	s.Require().NoError(err)
+
+	id, err := uuid.NewUUID()
+
+	s.Require().NoError(err)
+
+	// Act
+
+	fetchedAccountData, err := accountsClient.Fetch(id)
+
+	// Assert
+
+	assert.Nil(s.T(), fetchedAccountData, "Fetched account data should be nil")
+
+	assert.Equal(s.T(), fmt.Sprintf("Error message returned by the API | 404 | record %v does not exist", id), err.Error())
+}
+
+// Create
 func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 
 	// Arrange
@@ -120,6 +138,37 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 	assertAccountData(s.Suite, accountDataToStore, storedAccountData)
 }
 
+func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
+
+	// Arrange
+
+	// this url has to be a env variable
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+
+	s.Require().NoError(err)
+
+	id, err := uuid.NewUUID()
+
+	s.Require().NoError(err)
+
+	accountDataToStore := generatedExpectedAccountToBeReturnedByAPI(id)
+
+	storedTestAccount := generateAccountDataToStore(id)
+
+	s.NoError(s.dbConn.Create(storedTestAccount).Error)
+
+	// Act
+
+	storedAccountData, err := accountsClient.Create(accountDataToStore)
+
+	// Assert
+
+	assert.Nil(s.T(), storedAccountData, "Stored account data returned should be nil")
+
+	assert.Equal(s.T(), "Error message returned by the API | 409 | Account cannot be created as it violates a duplicate constraint", err.Error(), "Error message didn't match the expected")
+}
+
+// Delete
 func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
 
 	// Arrange
@@ -139,183 +188,33 @@ func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
 
 	expectedVersion := 0
 
-	fmt.Println(id.String())
-
 	// Act
 
 	err = accountsClient.Delete(id, expectedVersion)
 
 	s.Require().NoError(err)
+
 }
 
-func (*Account) TableName() string {
-	return "Account"
-}
+func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 
-// Value Marshal
-func (a AccountAttributes) Value() (driver.Value, error) {
-	return json.Marshal(a)
-}
+	// Arrange
 
-// Scan Unmarshal
-func (a *AccountAttributes) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-	return json.Unmarshal(b, &a)
-}
+	// this url has to be a env variable
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
 
-func generateAccountDataToStore(id uuid.UUID) *Account {
+	s.Require().NoError(err)
 
-	expectedAccountClassification := "Personal"
-	expectedAlternativeNames := []string{"Alternative Names."}
-	expectedBankId := "400300"
-	expectedBankIdCode := "GBDSC"
-	expectedBaseCurrency := "GBP"
-	expectedBic := "NWBKGB22"
-	expectedCountry := "GB"
-	expectedName := []string{"Name of the account holder, up to four lines possible."}
+	id, err := uuid.NewUUID()
 
-	expectedOrganisationId := "eb0bd6f5-c3f5-44b2-b677-acd23cdde73c"
+	s.Require().NoError(err)
+
 	expectedVersion := 0
 
-	return &Account{
-		ID:             id,
-		ModifiedOn:     time.Now(),
-		CreatedOn:      time.Now(),
-		IsDeleted:      false,
-		IsLocked:       false,
-		OrganisationID: expectedOrganisationId,
-		Version:        expectedVersion,
-		Record: &AccountAttributes{
-			AccountClassification: expectedAccountClassification,
-			AlternativeNames:      expectedAlternativeNames,
-			BankID:                expectedBankId,
-			BankIDCode:            expectedBankIdCode,
-			BaseCurrency:          expectedBaseCurrency,
-			Bic:                   expectedBic,
-			Country:               expectedCountry,
-			Name:                  expectedName,
-		},
-	}
-}
+	// Act
 
-type Account struct {
-	ID             uuid.UUID          `gorm:"unique"`
-	ModifiedOn     time.Time          `json:"modified_on" gorm:"type:modified_on"`
-	CreatedOn      time.Time          `json:"created_on" gorm:"type:created_on"`
-	OrganisationID string             `json:"organisation_id" gorm:"type:organisation_id"`
-	Version        int                `json:"version" gorm:"type:version"`
-	IsDeleted      bool               `gorm:"type:is_deleted"`
-	IsLocked       bool               `gorm:"type:is_locked"`
-	Record         *AccountAttributes `gorm:"type:jsonb" json:"record"`
-}
+	err = accountsClient.Delete(id, expectedVersion)
 
-func generatedExpectedAccountToBeReturnedByAPI(id uuid.UUID) *accounts.AccountData {
+	assert.Equal(s.T(), "Error message returned by the API | 404 | ", err.Error(), "Error message didn't match the expected")
 
-	expectedAccountClassification := "Personal"
-	expectedAlternativeNames := []string{"Alternative Names."}
-	expectedBankId := "400300"
-	expectedBankIdCode := "GBDSC"
-	expectedBaseCurrency := "GBP"
-	expectedBic := "NWBKGB22"
-	expectedCountry := "GB"
-	expectedName := []string{"Name of the account holder, up to four lines possible."}
-
-	timeLayout := "2006-01-02 15:04:05 -0700 MST"
-	expectedCreatedOn := "2021-07-31 22:09:02 +0000 UTC"
-	expectedCreatedOnTime, _ := time.Parse(timeLayout, expectedCreatedOn)
-
-	expectedId := id
-
-	expectedModifiedOn := "2021-07-31 22:09:02 +0000 UTC"
-	expectedModifiedOnTime, _ := time.Parse(timeLayout, expectedModifiedOn)
-
-	expectedOrganisationId := "eb0bd6f5-c3f5-44b2-b677-acd23cdde73c"
-	expectedType := "accounts"
-	expectedVersion := 0
-	expectedSelf := fmt.Sprintf("/v1/organisation/accounts/%s", id.String())
-
-	return &accounts.AccountData{
-		Data: &accounts.Data{
-			Attributes: &accounts.AccountAttributes{
-				AccountClassification: expectedAccountClassification,
-				AlternativeNames:      expectedAlternativeNames,
-				BankID:                expectedBankId,
-				BankIDCode:            expectedBankIdCode,
-				BaseCurrency:          expectedBaseCurrency,
-				Bic:                   expectedBic,
-				Country:               expectedCountry,
-				Name:                  expectedName,
-			},
-			CreatedOn:      expectedCreatedOnTime,
-			ID:             expectedId.String(),
-			ModifiedOn:     expectedModifiedOnTime,
-			OrganisationID: expectedOrganisationId,
-			Type:           expectedType,
-			Version:        expectedVersion,
-		},
-		Links: &accounts.Links{
-			Self: expectedSelf,
-		},
-	}
-}
-
-type Data struct {
-	Attributes     *AccountAttributes `json:"attributes" gorm:"type:attributes"`
-	CreatedOn      time.Time          `json:"created_on" gorm:"type:created_on"`
-	ID             string             `json:"id" gorm:"type:id"`
-	ModifiedOn     time.Time          `json:"modified_on" gorm:"type:modified_on"`
-	OrganisationID string             `json:"organisation_id" gorm:"type:organisation_id"`
-	Type           string             `json:"type" gorm:"type:type"`
-	Version        int                `json:"version" gorm:"type:version"`
-}
-
-type AccountAttributes struct {
-	AccountClassification string   `json:"account_classification,omitempty"`
-	AlternativeNames      []string `json:"alternative_bank_account_names,omitempty"`
-	BankID                string   `json:"bank_id,omitempty"`
-	BankIDCode            string   `json:"bank_id_code,omitempty"`
-	BaseCurrency          string   `json:"base_currency,omitempty"`
-	Bic                   string   `json:"bic,omitempty"`
-	Country               string   `json:"country,omitempty"`
-	Name                  []string `json:"name,omitempty"`
-}
-
-type Links struct {
-	Self string `json:"self" gorm:"type:self"`
-}
-
-func assertAccountData(s suite.Suite, expectedAccountData *accounts.AccountData, receivedAccountData *accounts.AccountResponse) {
-
-	assert.Equal(s.T(), expectedAccountData.Data.ID, receivedAccountData.Data.ID, "ID from the fetched account, should match the expected to be returned by the API")
-
-	assert.NotNil(s.T(), receivedAccountData.Data.ModifiedOn, "ModifiedOn from the fetched account, should not be nil")
-
-	assert.NotNil(s.T(), receivedAccountData.Data.CreatedOn, "CreatedOn from the fetched account, should not be nil")
-
-	assert.Equal(s.T(), expectedAccountData.Data.OrganisationID, receivedAccountData.Data.OrganisationID, "OrganisationId from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Type, receivedAccountData.Data.Type, "Type from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Version, receivedAccountData.Data.Version, "Version from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Links.Self, receivedAccountData.Links.Self, "Self links from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.AccountClassification, receivedAccountData.Data.Attributes.AccountClassification, "AccountClassification from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.AlternativeNames, receivedAccountData.Data.Attributes.AlternativeNames, "AlternativeNames from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.BankID, receivedAccountData.Data.Attributes.BankID, "BankId from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.BankIDCode, receivedAccountData.Data.Attributes.BankIDCode, "BankIdCode from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.BaseCurrency, receivedAccountData.Data.Attributes.BaseCurrency, "BaseCurrency from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.Bic, receivedAccountData.Data.Attributes.Bic, "Bic from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.Country, receivedAccountData.Data.Attributes.Country, "Country from the fetched account, should match the expected to be returned by the API")
-
-	assert.Equal(s.T(), expectedAccountData.Data.Attributes.Name, receivedAccountData.Data.Attributes.Name, "Name from the fetched account, should match the expected to be returned by the API")
 }

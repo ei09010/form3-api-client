@@ -32,7 +32,7 @@ func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp *AccountRe
 		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
 	}
 
-	resp.apiErrorMessage.Status = httpResp.StatusCode
+	resp.Status = httpResp.StatusCode
 
 	defer httpResp.Body.Close()
 

@@ -31,7 +31,7 @@ func (c *Client) postJSON(config *apiConfig, apiReq interface{}, resp *AccountRe
 		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
 	}
 
-	resp.apiErrorMessage.Status = httpResp.StatusCode
+	resp.Status = httpResp.StatusCode
 
 	defer httpResp.Body.Close()
 
