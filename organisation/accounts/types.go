@@ -3,6 +3,7 @@ package accounts
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -32,7 +33,7 @@ type apiCommonResult struct {
 }
 
 func isHttpCodeOK(httpCode int) bool {
-	return httpCode >= 200 && httpCode < 300
+	return httpCode >= http.StatusOK && httpCode < http.StatusBadRequest
 }
 
 // Error returns an error if this object has a Status not between 200 and 300
