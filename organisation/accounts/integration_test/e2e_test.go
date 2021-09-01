@@ -3,6 +3,7 @@ package integration
 import (
 	"ei09010/form3-api-client/organisation/accounts"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/jinzhu/gorm"
@@ -21,16 +22,20 @@ type e2eTestSuite struct {
 	dbConn          *gorm.DB
 }
 
+var applicationUrl string = os.Getenv("BATATA")
+
 func TestE2ETestSuite(t *testing.T) {
 	suite.Run(t, &e2eTestSuite{})
 }
 
 func (s *e2eTestSuite) SetupSuite() {
 
+	// adapt to get from settings file
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
-		"localhost", "5432", "root", "interview_accountapi", "password")
+		os.Getenv("PSQL_HOST"), "5432", "root", "interview_accountapi", "password")
 
 	conn, err := gorm.Open("postgres", dbUri)
+
 	if err != nil {
 		fmt.Print(err)
 	}
@@ -49,6 +54,9 @@ func (s *e2eTestSuite) TearDownSuite() {
 }
 
 func (s *e2eTestSuite) SetupTest() {
+
+	s.Require().NoError(s.dbConn.DB().Ping())
+
 	s.dbConn.Delete(&Account{})
 }
 
@@ -57,7 +65,7 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	// Arrange
 
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
 
@@ -86,7 +94,7 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 func (s *e2eTestSuite) TestFetch_FetchesNonExistentAccount_Returns404Error() {
 
 	// Arrange
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
 
@@ -111,7 +119,7 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 	// Arrange
 
 	// this url has to be a env variable
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
 
@@ -137,7 +145,7 @@ func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
 	// Arrange
 
 	// this url has to be a env variable
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
 
@@ -168,7 +176,7 @@ func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
 	// Arrange
 
 	// this url has to be a env variable
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
 
@@ -195,7 +203,7 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 	// Arrange
 
 	// this url has to be a env variable
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL("http://localhost:8080"))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(os.Getenv("BATATA")))
 
 	s.Require().NoError(err)
 
