@@ -13,7 +13,7 @@ func (c *Client) Fetch(accountId uuid.UUID) (*AccountResponse, error) {
 
 	accountResponse := &AccountResponse{}
 
-	if err := c.getJSON(accountId, accountsApi, accountResponse); err != nil {
+	if err := c.getJSON(accountId, accountsApiConfig, accountResponse); err != nil {
 		return nil, err
 	}
 

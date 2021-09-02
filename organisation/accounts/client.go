@@ -12,7 +12,7 @@ type apiConfig struct {
 	path string
 }
 
-var accountsApi = &apiConfig{
+var accountsApiConfig = &apiConfig{
 	host: "https://api.form3.tech",
 	path: "/v1/organisation/accounts",
 }
