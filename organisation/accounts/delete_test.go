@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -35,9 +36,11 @@ func TestDelete_ExistingAccountId_Returns200WithNoBody(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
+	ctx := context.Background()
+
 	// Act
 
-	err = accountClient.Delete(uuid.MustParse(validAccountId), validVersion)
+	err = accountClient.Delete(ctx, uuid.MustParse(validAccountId), validVersion)
 
 	// Assert
 
@@ -71,9 +74,11 @@ func TestDelete_NotExistingAccountId_Returns404WithNoBody(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
+	ctx := context.Background()
+
 	// Act
 
-	err = accountClient.Delete(uuid.MustParse(validAccountId), validVersion)
+	err = accountClient.Delete(ctx, uuid.MustParse(validAccountId), validVersion)
 
 	// Assert
 
@@ -103,9 +108,11 @@ func TestDelete_InternalServerError_Returns500WithNoBody(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
+	ctx := context.Background()
+
 	// Act
 
-	err = accountClient.Delete(uuid.MustParse(validAccountId), validVersion)
+	err = accountClient.Delete(ctx, uuid.MustParse(validAccountId), validVersion)
 
 	// Assert
 
@@ -194,9 +201,11 @@ func TestDeleteErrorCases(t *testing.T) {
 			httpClient: accountErrClient,
 		}
 
+		ctx := context.Background()
+
 		// Act
 
-		err := accountsClient.Delete(uuid.MustParse(errCase.accountId), errCase.version)
+		err := accountsClient.Delete(ctx, uuid.MustParse(errCase.accountId), errCase.version)
 
 		// Assert
 

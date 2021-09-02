@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"ei09010/form3-api-client/organisation/accounts"
 	"fmt"
 	"os"
@@ -85,9 +86,11 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	expectedAccountData := generatedExpectedAccountToBeReturnedByAPI(id)
 
+	ctx := context.Background()
+
 	// Act
 
-	fetchedAccountData, err := accountsClient.Fetch(id)
+	fetchedAccountData, err := accountsClient.Fetch(ctx, id)
 
 	s.Require().NoError(err)
 
@@ -100,6 +103,7 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 func (s *e2eTestSuite) TestFetch_FetchesNonExistentAccount_Returns404Error() {
 
 	// Arrange
+
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
@@ -108,9 +112,11 @@ func (s *e2eTestSuite) TestFetch_FetchesNonExistentAccount_Returns404Error() {
 
 	s.Require().NoError(err)
 
+	ctx := context.Background()
+
 	// Act
 
-	fetchedAccountData, err := accountsClient.Fetch(id)
+	fetchedAccountData, err := accountsClient.Fetch(ctx, id)
 
 	// Assert
 
@@ -124,7 +130,6 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 
 	// Arrange
 
-	// this url has to be a env variable
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
@@ -135,9 +140,11 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 
 	accountDataToStore := generatedExpectedAccountToBeReturnedByAPI(id)
 
+	ctx := context.Background()
+
 	// Act
 
-	storedAccountData, err := accountsClient.Create(accountDataToStore)
+	storedAccountData, err := accountsClient.Create(ctx, accountDataToStore)
 
 	s.Require().NoError(err)
 
@@ -149,8 +156,6 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
 
 	// Arrange
-
-	// this url has to be a env variable
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
@@ -165,9 +170,11 @@ func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
 
 	s.NoError(s.dbConn.Create(storedTestAccount).Error)
 
+	ctx := context.Background()
+
 	// Act
 
-	storedAccountData, err := accountsClient.Create(accountDataToStore)
+	storedAccountData, err := accountsClient.Create(ctx, accountDataToStore)
 
 	// Assert
 
@@ -180,8 +187,6 @@ func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
 func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
 
 	// Arrange
-
-	// this url has to be a env variable
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
@@ -196,9 +201,11 @@ func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
 
 	expectedVersion := 0
 
+	ctx := context.Background()
+
 	// Act
 
-	err = accountsClient.Delete(id, expectedVersion)
+	err = accountsClient.Delete(ctx, id, expectedVersion)
 
 	s.Require().NoError(err)
 
@@ -208,7 +215,6 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 
 	// Arrange
 
-	// this url has to be a env variable
 	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
@@ -219,9 +225,11 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 
 	expectedVersion := 0
 
+	ctx := context.Background()
+
 	// Act
 
-	err = accountsClient.Delete(id, expectedVersion)
+	err = accountsClient.Delete(ctx, id, expectedVersion)
 
 	assert.Equal(s.T(), "Error message returned by the API | 404 | ", err.Error(), "Error message didn't match the expected")
 

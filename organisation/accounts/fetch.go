@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,11 +10,11 @@ import (
 )
 
 // Fetch retrieves account related information using an accountId
-func (c *Client) Fetch(accountId uuid.UUID) (*AccountResponse, error) {
+func (c *Client) Fetch(ctx context.Context, accountId uuid.UUID) (*AccountResponse, error) {
 
 	accountResponse := &AccountResponse{}
 
-	if err := c.getJSON(accountId, accountsApiConfig, accountResponse); err != nil {
+	if err := c.getJSON(ctx, accountId, accountsApiConfig, accountResponse); err != nil {
 		return nil, err
 	}
 
@@ -24,9 +25,9 @@ func (c *Client) Fetch(accountId uuid.UUID) (*AccountResponse, error) {
 	return accountResponse, nil
 }
 
-func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp *AccountResponse) error {
+func (c *Client) getJSON(ctx context.Context, accountId uuid.UUID, config *apiConfig, resp *AccountResponse) error {
 
-	httpResp, err := c.get(accountId, config)
+	httpResp, err := c.get(ctx, accountId, config)
 
 	if err != nil {
 		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
@@ -46,7 +47,7 @@ func (c *Client) getJSON(accountId uuid.UUID, config *apiConfig, resp *AccountRe
 
 }
 
-func (c *Client) get(accountId uuid.UUID, config *apiConfig) (*http.Response, error) {
+func (c *Client) get(ctx context.Context, accountId uuid.UUID, config *apiConfig) (*http.Response, error) {
 
 	var err error
 
@@ -60,6 +61,11 @@ func (c *Client) get(accountId uuid.UUID, config *apiConfig) (*http.Response, er
 	if err != nil {
 		return nil, err
 	}
+
+	customReq.WithContext(ctx)
+
+	customReq.Header.Set("Content-Type", "application/json")
+	customReq.Header.Set("user-agent", "golang-sdk")
 
 	return c.httpClient.Do(customReq)
 

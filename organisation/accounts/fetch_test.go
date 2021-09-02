@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -42,11 +43,13 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 	defer ts.Close()
 
+	ctx := context.Background()
+
 	// Act
 
 	accountsClient, err := NewClient(WithBaseURL(ts.URL), WithTimeout(time.Duration(100*time.Millisecond)))
 
-	response, err := accountsClient.Fetch(uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+	response, err := accountsClient.Fetch(ctx, uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
 
 	if err != nil {
 		t.Errorf("Returned err: got %v want %v",
@@ -243,9 +246,11 @@ func TestFetchErrorCases(t *testing.T) {
 			httpClient: accountErrClient,
 		}
 
+		ctx := context.Background()
+
 		// Act
 
-		response, err := accountsClient.Fetch(uuid.MustParse(errCase.accountId))
+		response, err := accountsClient.Fetch(ctx, uuid.MustParse(errCase.accountId))
 
 		if response != nil {
 			t.Errorf("Returned reponse: got %v want %v",

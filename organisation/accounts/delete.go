@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,13 +12,13 @@ import (
 )
 
 // Delete issues an API request to delete a an account with a given accountId and version number
-func (c *Client) Delete(accountId uuid.UUID, version int) error {
+func (c *Client) Delete(ctx context.Context, accountId uuid.UUID, version int) error {
 
-	return c.deleteJSON(accountId, map[string]string{"version": strconv.Itoa(version)}, accountsApi)
+	return c.deleteJSON(ctx, accountId, map[string]string{"version": strconv.Itoa(version)}, accountsApiConfig)
 
 }
-func (c *Client) deleteJSON(accountId uuid.UUID, queryStringParam map[string]string, config *apiConfig) error {
-	httpResp, err := c.deleteRequest(accountId, queryStringParam, config)
+func (c *Client) deleteJSON(ctx context.Context, accountId uuid.UUID, queryStringParam map[string]string, config *apiConfig) error {
+	httpResp, err := c.deleteRequest(ctx, accountId, queryStringParam, config)
 
 	if err != nil {
 		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
@@ -43,7 +44,7 @@ func (c *Client) deleteJSON(accountId uuid.UUID, queryStringParam map[string]str
 	return fmt.Errorf("%w | %d | %s", ApiHttpErrorType, httpResp.StatusCode, resp.ErrorMessage)
 }
 
-func (c *Client) deleteRequest(accountId uuid.UUID, queryStringParam map[string]string, config *apiConfig) (*http.Response, error) {
+func (c *Client) deleteRequest(ctx context.Context, accountId uuid.UUID, queryStringParam map[string]string, config *apiConfig) (*http.Response, error) {
 
 	var err error
 
@@ -70,6 +71,8 @@ func (c *Client) deleteRequest(accountId uuid.UUID, queryStringParam map[string]
 	if err != nil {
 		return nil, err
 	}
+
+	customReq.WithContext(ctx)
 
 	customReq.Header.Set("Content-Type", "application/json")
 	customReq.Header.Set("user-agent", "golang-sdk")

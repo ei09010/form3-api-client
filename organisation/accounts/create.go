@@ -2,17 +2,18 @@ package accounts
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
 // Create issues an API request to store given account related information
-func (c *Client) Create(accountData *AccountData) (*AccountResponse, error) {
+func (c *Client) Create(ctx context.Context, accountData *AccountData) (*AccountResponse, error) {
 
 	accountResponse := &AccountResponse{}
 
-	if err := c.postJSON(accountsApi, accountData, accountResponse); err != nil {
+	if err := c.postJSON(ctx, accountsApiConfig, accountData, accountResponse); err != nil {
 		return nil, err
 	}
 
@@ -24,8 +25,8 @@ func (c *Client) Create(accountData *AccountData) (*AccountResponse, error) {
 
 }
 
-func (c *Client) postJSON(config *apiConfig, apiReq interface{}, resp *AccountResponse) error {
-	httpResp, err := c.post(apiReq, config)
+func (c *Client) postJSON(ctx context.Context, config *apiConfig, apiReq interface{}, resp *AccountResponse) error {
+	httpResp, err := c.post(ctx, apiReq, config)
 
 	if err != nil {
 		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
@@ -44,7 +45,7 @@ func (c *Client) postJSON(config *apiConfig, apiReq interface{}, resp *AccountRe
 	return nil
 }
 
-func (c *Client) post(apiReq interface{}, config *apiConfig) (*http.Response, error) {
+func (c *Client) post(ctx context.Context, apiReq interface{}, config *apiConfig) (*http.Response, error) {
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
@@ -72,6 +73,8 @@ func (c *Client) post(apiReq interface{}, config *apiConfig) (*http.Response, er
 
 	customReq.Header.Set("Content-Type", "application/json")
 	customReq.Header.Set("user-agent", "golang-sdk")
+
+	customReq.WithContext(ctx)
 
 	return c.httpClient.Do(customReq)
 }

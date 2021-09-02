@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"bytes"
+	"context"
 
 	"io"
 	"io/ioutil"
@@ -93,9 +94,11 @@ func TestCreate_validAccountData_returnsStoredAccountsData(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
+
 	// Act
 
-	response, err := accountClient.Create(accountDataToCreate)
+	response, err := accountClient.Create(ctx, accountDataToCreate)
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -267,9 +270,11 @@ func TestCreateErrorCases(t *testing.T) {
 			httpClient: accountErrClient,
 		}
 
+		ctx := context.Background()
+
 		// Act
 
-		response, err := accountsClient.Create(errCase.accountPayload)
+		response, err := accountsClient.Create(ctx, errCase.accountPayload)
 
 		// Assert
 
