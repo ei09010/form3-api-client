@@ -27,8 +27,6 @@ func (c *Client) Create(accountData *AccountData) (*AccountResponse, error) {
 func (c *Client) postJSON(config *apiConfig, apiReq interface{}, resp *AccountResponse) error {
 	httpResp, err := c.post(apiReq, config)
 
-	fmt.Printf("MY ERROR: %s", err.Error())
-
 	if err != nil {
 		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
 	}
@@ -60,7 +58,6 @@ func (c *Client) post(apiReq interface{}, config *apiConfig) (*http.Response, er
 	} else {
 
 		c.baseURL, err = c.baseURL.Parse(config.path)
-
 	}
 
 	if err != nil {

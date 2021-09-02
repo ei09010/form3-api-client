@@ -11,5 +11,5 @@ RUN go mod download
 # Copy local code to the container image.
 COPY . .
 
-# Run tests
+# Run unit, mock tests, Run integration tests
 CMD go test -v ./...

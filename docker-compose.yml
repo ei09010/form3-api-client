@@ -22,9 +22,8 @@ services:
     ports:
       - 8080:8080
     networks: 
-      - tests
-    # links:
-    #   - integration-tests
+      - local
+
 
   postgresql:
     image: postgres:9.5-alpine
@@ -42,9 +41,8 @@ services:
     volumes:
       - ./scripts/db:/docker-entrypoint-initdb.d/
     networks: 
-      - tests
-    # links:
-    #   - integration-tests
+      - local
+
 
   vault:
     image: vault:1.6.3
@@ -52,11 +50,11 @@ services:
       - SKIP_SETCAP=1
       - VAULT_DEV_ROOT_TOKEN_ID=8fb95528-57c6-422e-9722-d2147bcba8ed
     networks: 
-      - tests
+      - local
   
-  integration-tests:
-    image: integration
-    container_name: integration_tests
+  tests:
+    image: tests
+    container_name: tests
     build:
       context: ./organisation/accounts
       dockerfile: Dockerfile
@@ -73,8 +71,13 @@ services:
       - DATABASE-USERNAME=interview_accountapi_user
       - DATABASE-PASSWORD=123
       - BATATA=http://accountapi:8080
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
     networks: 
-      - tests
+      - local
 
 networks:
-  tests:
+  local:
+    driver: bridge
