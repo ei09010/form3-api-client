@@ -22,7 +22,11 @@ type e2eTestSuite struct {
 	dbConn          *gorm.DB
 }
 
-var applicationUrl string = os.Getenv("BATATA")
+var applicationUrl string
+var databaseHostUrl string
+var databasePort string
+var databaseUser string
+var databasePwd string
 
 func TestE2ETestSuite(t *testing.T) {
 	suite.Run(t, &e2eTestSuite{})
@@ -30,9 +34,11 @@ func TestE2ETestSuite(t *testing.T) {
 
 func (s *e2eTestSuite) SetupSuite() {
 
+	initEnvVariables()
+
 	// adapt to get from settings file
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
-		os.Getenv("PSQL_HOST"), "5432", "root", "interview_accountapi", "password")
+		databaseHostUrl, databasePort, databaseUser, "interview_accountapi", databasePwd)
 
 	conn, err := gorm.Open("postgres", dbUri)
 
@@ -203,7 +209,7 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 	// Arrange
 
 	// this url has to be a env variable
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(os.Getenv("BATATA")))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
 
 	s.Require().NoError(err)
 
@@ -219,4 +225,53 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 
 	assert.Equal(s.T(), "Error message returned by the API | 404 | ", err.Error(), "Error message didn't match the expected")
 
+}
+
+func initEnvVariables() {
+
+	localBaseUrl := "localhost"
+	localApiUrl := "http://localhost:8080"
+	localDatabasePort := "5432"
+	localDatabaseUser := "root"
+	localDatabasePwd := "password"
+
+	lookedUpAppUrl, ok := os.LookupEnv("API-URL")
+
+	if !ok {
+		applicationUrl = localApiUrl
+	} else {
+		applicationUrl = lookedUpAppUrl
+	}
+
+	lookedUpDatabaseHostUrl, ok := os.LookupEnv("PSQL_HOST")
+
+	if !ok {
+		databaseHostUrl = localBaseUrl
+	} else {
+		databaseHostUrl = lookedUpDatabaseHostUrl
+	}
+
+	lookedUpDatabasePort, ok := os.LookupEnv("PSQL_PORT")
+
+	if !ok {
+		databasePort = localDatabasePort
+	} else {
+		databasePort = lookedUpDatabasePort
+	}
+
+	lookedUpDatabaseUser, ok := os.LookupEnv("PSQL_USER")
+
+	if !ok {
+		databaseUser = localDatabaseUser
+	} else {
+		databaseUser = lookedUpDatabaseUser
+	}
+
+	lookedUpDatabasePwd, ok := os.LookupEnv("PSQL_PASSWORD")
+
+	if !ok {
+		databasePwd = localDatabasePwd
+	} else {
+		databasePwd = lookedUpDatabasePwd
+	}
 }

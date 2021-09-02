@@ -66,11 +66,7 @@ services:
       - PSQL_PASSWORD=password
       - PSQL_HOST=postgresql
       - PSQL_PORT=5432
-      - DATABASE-HOST=postgresql
-      - DATABASE-SSL-MODE=disable
-      - DATABASE-USERNAME=interview_accountapi_user
-      - DATABASE-PASSWORD=123
-      - BATATA=http://accountapi:8080
+      - API-URL=http://accountapi:8080
     deploy:
       restart_policy:
         condition: on-failure
