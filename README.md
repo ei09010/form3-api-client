@@ -19,7 +19,7 @@ This the Go Client for Form3 API Account Services. It is a Go librar that enable
 
  - If you are a reviewer from form3tech-interviewer-1, just checkout this repo and run `docker-compose up`
 
-## Instalation
+## Installation
 
 To install the Go Client for Form3 Account Services, please execute the following `go get` command.
 
