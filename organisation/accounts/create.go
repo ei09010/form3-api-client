@@ -13,7 +13,7 @@ func (c *Client) Create(ctx context.Context, accountData *AccountData) (*Account
 
 	accountResponse := &AccountResponse{}
 
-	if err := c.postJSON(ctx, accountsApiConfig, accountData, accountResponse); err != nil {
+	if err := c.postJSON(ctx, AccountsApiDefaultUrl, accountData, accountResponse); err != nil {
 		return nil, err
 	}
 
@@ -25,8 +25,8 @@ func (c *Client) Create(ctx context.Context, accountData *AccountData) (*Account
 
 }
 
-func (c *Client) postJSON(ctx context.Context, config *apiConfig, apiReq interface{}, resp *AccountResponse) error {
-	httpResp, err := c.post(ctx, apiReq, config)
+func (c *Client) postJSON(ctx context.Context, config *apiConfig, apiReqContent interface{}, resp *AccountResponse) error {
+	httpResp, err := c.post(ctx, apiReqContent, config)
 
 	if err != nil {
 		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)

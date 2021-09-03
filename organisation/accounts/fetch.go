@@ -14,7 +14,7 @@ func (c *Client) Fetch(ctx context.Context, accountId uuid.UUID) (*AccountRespon
 
 	accountResponse := &AccountResponse{}
 
-	if err := c.getJSON(ctx, accountId, accountsApiConfig, accountResponse); err != nil {
+	if err := c.getJSON(ctx, accountId, AccountsApiDefaultUrl, accountResponse); err != nil {
 		return nil, err
 	}
 

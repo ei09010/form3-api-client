@@ -14,7 +14,7 @@ import (
 // Delete issues an API request to delete a an account with a given accountId and version number
 func (c *Client) Delete(ctx context.Context, accountId uuid.UUID, version int) error {
 
-	return c.deleteJSON(ctx, accountId, map[string]string{"version": strconv.Itoa(version)}, accountsApiConfig)
+	return c.deleteJSON(ctx, accountId, map[string]string{"version": strconv.Itoa(version)}, AccountsApiDefaultUrl)
 
 }
 func (c *Client) deleteJSON(ctx context.Context, accountId uuid.UUID, queryStringParam map[string]string, config *apiConfig) error {
