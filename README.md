@@ -37,7 +37,7 @@ func main() {
 		log.Fatalf("fatal error: %s", err)
 	}
 
-	accountResponse, _, err := accountsClient.Fetch(context.Background(), uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+	accountResponse, err := accountsClient.Fetch(context.Background(), uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
 	if err != nil {
 		log.Fatalf("fatal error: %s", err)
 	}
