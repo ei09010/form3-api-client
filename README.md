@@ -4,7 +4,7 @@
 
 ## Description
 
-This the Go Client for Form3 API Account Services. It is a Go librar that enable a user to execute the following operations with the Form3 Accounts API:
+This the Go Client for Form3 API Account Services. It is a Go library that enable a user to execute the following operations with the Form3 Accounts API:
 
 - Create
 - Fetch
@@ -13,19 +13,11 @@ This the Go Client for Form3 API Account Services. It is a Go librar that enable
 ## Requirements
 
  - If you only whish to run the automated tests (unit, mock and integration) : Docker recent version
- - For development usage: Go 1.16.6 or later.
+
 
 ## Instructions
 
  - If you are a reviewer from form3tech-interviewer-1, just checkout this repo and run `docker-compose up`
-
-## Installation
-
-To install the Go Client for Form3 Account Services, please execute the following `go get` command.
-
-```bash
-    go get ei09010/form3-api-client/organisation/accounts
-```
 
 ## Usage
 
