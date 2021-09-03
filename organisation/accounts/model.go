@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Response containing all the information related to accounts
+// Response returned by the client SDK containing all the information related to an account related request
 type AccountResponse struct {
 	*AccountData
 	apiCommonResult

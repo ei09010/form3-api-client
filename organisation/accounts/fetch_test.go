@@ -176,7 +176,7 @@ func TestFetchErrorCases(t *testing.T) {
 			requestPath:          "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
 			expectedErrorMessage: "EOF",
 			expectedHttpStatus:   http.StatusInternalServerError,
-			expectedErrorType:    UnmarshallingError,
+			expectedErrorType:    BuildingRequestError,
 		},
 		"Invalid json response in successful request": {
 			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
@@ -184,7 +184,7 @@ func TestFetchErrorCases(t *testing.T) {
 			requestPath:          "/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
 			expectedErrorMessage: "invalid character 'u' looking for beginning of value",
 			expectedHttpStatus:   http.StatusOK,
-			expectedErrorType:    UnmarshallingError,
+			expectedErrorType:    BuildingRequestError,
 		},
 		"Id is not a valid uuid": {
 			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
@@ -211,7 +211,7 @@ func TestFetchErrorCases(t *testing.T) {
 			requestPath:          "/v1/organisation/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
 			expectedErrorMessage: ` "": feature not supported`,
 			expectedHttpStatus:   http.StatusBadRequest,
-			expectedErrorType:    ExecutingRequestError,
+			expectedErrorType:    BuildingRequestError,
 			doError: &url.Error{
 				Err: http.ErrNotSupported,
 			},
@@ -222,7 +222,7 @@ func TestFetchErrorCases(t *testing.T) {
 			requestPath:          "/v1/organisation/ad27e265-9605-4b4b-a0e5-3003ea9cc4df",
 			expectedErrorMessage: ` "": http: Handler timeout`,
 			expectedHttpStatus:   http.StatusInternalServerError,
-			expectedErrorType:    ExecutingRequestError,
+			expectedErrorType:    BuildingRequestError,
 			doError: &url.Error{
 				Err: http.ErrHandlerTimeout,
 			},

@@ -21,7 +21,7 @@ func (c *Client) deleteJSON(ctx context.Context, accountId uuid.UUID, queryStrin
 	httpResp, err := c.deleteRequest(ctx, accountId, queryStringParam, config)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
+		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
 	}
 
 	if httpResp.Body == http.NoBody {
@@ -38,7 +38,7 @@ func (c *Client) deleteJSON(ctx context.Context, accountId uuid.UUID, queryStrin
 	defer httpResp.Body.Close()
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", UnmarshallingError, httpResp.StatusCode, err)
+		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
 	}
 
 	return fmt.Errorf("%w | %d | %s", ApiHttpErrorType, httpResp.StatusCode, resp.ErrorMessage)

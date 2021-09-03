@@ -234,7 +234,7 @@ func TestCreateErrorCases(t *testing.T) {
 			requestPath:          `/v1/organisation/accounts`,
 			expectedErrorMessage: "EOF",
 			expectedHttpStatus:   http.StatusInternalServerError,
-			expectedErrorType:    UnmarshallingError,
+			expectedErrorType:    BuildingRequestError,
 			accountPayload:       generateValidGenericAccountData(),
 		},
 		"Handler timeout causes the request to fail": {
@@ -243,7 +243,7 @@ func TestCreateErrorCases(t *testing.T) {
 			requestPath:          `/v1/organisation/accounts`,
 			expectedErrorMessage: `Requesting "handler url": http: Handler timeout`,
 			expectedHttpStatus:   http.StatusInternalServerError,
-			expectedErrorType:    ExecutingRequestError,
+			expectedErrorType:    BuildingRequestError,
 			doError: &url.Error{
 				Err: http.ErrHandlerTimeout,
 				Op:  "Requesting",

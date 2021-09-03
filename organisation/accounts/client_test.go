@@ -93,21 +93,21 @@ func TestClientErrorCases(t *testing.T) {
 	}{
 		"Empty Base Url": {
 			expectedErrorMessage: `parse "": empty url`,
-			expectedErrorType:    clientCreationError,
+			expectedErrorType:    ClientCreationError,
 			baseURL:              "",
 			expectedHttpStatus:   http.StatusBadRequest,
 			timeoutValue:         time.Duration(1 * time.Millisecond),
 		},
 		"Invalid Base Url": {
 			expectedErrorMessage: `parse "wrongURL": invalid URI for request`,
-			expectedErrorType:    clientCreationError,
+			expectedErrorType:    ClientCreationError,
 			baseURL:              "wrongURL",
 			expectedHttpStatus:   http.StatusBadRequest,
 			timeoutValue:         time.Duration(1 * time.Millisecond),
 		},
 		"Invalid baseURL and Invalid Timeout Value": {
 			expectedErrorMessage: `parse "wrongURL": invalid URI for request`,
-			expectedErrorType:    clientCreationError,
+			expectedErrorType:    ClientCreationError,
 			baseURL:              "wrongURL",
 			expectedHttpStatus:   http.StatusBadRequest,
 			timeoutValue:         time.Duration(-1 * time.Millisecond),

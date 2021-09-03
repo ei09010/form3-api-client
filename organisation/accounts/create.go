@@ -29,7 +29,7 @@ func (c *Client) postJSON(ctx context.Context, config *apiConfig, apiReq interfa
 	httpResp, err := c.post(ctx, apiReq, config)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
+		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
 	}
 
 	resp.Status = httpResp.StatusCode
@@ -39,7 +39,7 @@ func (c *Client) postJSON(ctx context.Context, config *apiConfig, apiReq interfa
 	err = json.NewDecoder(httpResp.Body).Decode(resp)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", UnmarshallingError, httpResp.StatusCode, err)
+		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
 	}
 
 	return nil

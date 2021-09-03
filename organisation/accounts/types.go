@@ -15,10 +15,9 @@ const (
 
 // Error Standard Types
 var (
-	ApiHttpErrorType      = errors.New("Error message returned by the API")
-	UnmarshallingError    = errors.New("UnmarshallingError")
-	ExecutingRequestError = errors.New("ExecutingRequestError")
-	clientCreationError   = errors.New("Unable to create the client")
+	ApiHttpErrorType     = errors.New("Error message returned by the API")
+	BuildingRequestError = errors.New("Error while building the request")
+	ClientCreationError  = errors.New("Unable to create the client")
 )
 
 // apiCommonResult contains the error message returned by the Form3 API and it's http code. This is used internally.

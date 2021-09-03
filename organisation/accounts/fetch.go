@@ -30,7 +30,7 @@ func (c *Client) getJSON(ctx context.Context, accountId uuid.UUID, config *apiCo
 	httpResp, err := c.get(ctx, accountId, config)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", ExecutingRequestError, httpResp.StatusCode, err)
+		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
 	}
 
 	resp.Status = httpResp.StatusCode
@@ -40,7 +40,7 @@ func (c *Client) getJSON(ctx context.Context, accountId uuid.UUID, config *apiCo
 	err = json.NewDecoder(httpResp.Body).Decode(resp)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", UnmarshallingError, httpResp.StatusCode, err)
+		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
 	}
 
 	return nil

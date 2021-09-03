@@ -166,7 +166,7 @@ func TestDeleteErrorCases(t *testing.T) {
 			requestPath:          `/v1/organisation/accounts`,
 			messageResponse:      "",
 			expectedErrorMessage: `Requesting "handler url": http: Handler timeout`,
-			expectedErrorType:    ExecutingRequestError,
+			expectedErrorType:    BuildingRequestError,
 			doError: &url.Error{
 				Err: http.ErrHandlerTimeout,
 				Op:  "Requesting",
@@ -180,7 +180,7 @@ func TestDeleteErrorCases(t *testing.T) {
 			requestPath:          `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`,
 			messageResponse:      `rror":"invalid version number"}`,
 			expectedErrorMessage: "invalid character 'r' looking for beginning of value",
-			expectedErrorType:    UnmarshallingError,
+			expectedErrorType:    BuildingRequestError,
 		},
 	}
 
