@@ -71,8 +71,7 @@ func (c *Client) post(ctx context.Context, apiReq interface{}, config *apiConfig
 		return nil, err
 	}
 
-	customReq.Header.Set("Content-Type", "application/json")
-	customReq.Header.Set("user-agent", "golang-sdk")
+	addHeaders(customReq)
 
 	customReq.WithContext(ctx)
 

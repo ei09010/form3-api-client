@@ -44,3 +44,8 @@ func (e *apiCommonResult) Error() error {
 
 	return nil
 }
+
+func addHeaders(customReq *http.Request) {
+	customReq.Header.Set("Content-Type", "application/json")
+	customReq.Header.Set("User-Agent", "form3-go rest-client/0.1 go1.17")
+}

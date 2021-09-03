@@ -74,8 +74,7 @@ func (c *Client) deleteRequest(ctx context.Context, accountId uuid.UUID, querySt
 
 	customReq.WithContext(ctx)
 
-	customReq.Header.Set("Content-Type", "application/json")
-	customReq.Header.Set("user-agent", "golang-sdk")
+	addHeaders(customReq)
 
 	return c.httpClient.Do(customReq)
 }

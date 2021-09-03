@@ -64,8 +64,7 @@ func (c *Client) get(ctx context.Context, accountId uuid.UUID, config *apiConfig
 
 	customReq.WithContext(ctx)
 
-	customReq.Header.Set("Content-Type", "application/json")
-	customReq.Header.Set("user-agent", "golang-sdk")
+	addHeaders(customReq)
 
 	return c.httpClient.Do(customReq)
 
