@@ -4,7 +4,6 @@ import (
 	"context"
 	"ei09010/form3-api-client/organisation/accounts"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/jinzhu/gorm"
@@ -23,11 +22,7 @@ type e2eTestSuite struct {
 	dbConn          *gorm.DB
 }
 
-var applicationUrl string
-var databaseHostUrl string
-var databasePort string
-var databaseUser string
-var databasePwd string
+var envVar = &EnvVar{}
 
 func TestE2ETestSuite(t *testing.T) {
 	suite.Run(t, &e2eTestSuite{})
@@ -35,11 +30,10 @@ func TestE2ETestSuite(t *testing.T) {
 
 func (s *e2eTestSuite) SetupSuite() {
 
-	initEnvVariables()
+	envVar.InitEnvVariables()
 
-	// adapt to get from settings file
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
-		databaseHostUrl, databasePort, databaseUser, "interview_accountapi", databasePwd)
+		envVar.DatabaseHostUrl, envVar.DatabasePort, envVar.DatabaseUser, envVar.DatabaseName, envVar.DatabasePwd)
 
 	conn, err := gorm.Open("postgres", dbUri)
 
@@ -72,7 +66,7 @@ func (s *e2eTestSuite) TestFetch_FetchesAccount_ReturnsAccount() {
 
 	// Arrange
 
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(envVar.ApplicationUrl))
 
 	s.Require().NoError(err)
 
@@ -104,7 +98,7 @@ func (s *e2eTestSuite) TestFetch_FetchesNonExistentAccount_Returns404Error() {
 
 	// Arrange
 
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(envVar.ApplicationUrl))
 
 	s.Require().NoError(err)
 
@@ -130,7 +124,7 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 
 	// Arrange
 
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(envVar.ApplicationUrl))
 
 	s.Require().NoError(err)
 
@@ -156,7 +150,7 @@ func (s *e2eTestSuite) TestCreate_CreatesAccount_ReturnsAccountCreated() {
 func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
 
 	// Arrange
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(envVar.ApplicationUrl))
 
 	s.Require().NoError(err)
 
@@ -187,7 +181,7 @@ func (s *e2eTestSuite) TestCreate_CreatesDuplicateAccount_Returns409Conflict() {
 func (s *e2eTestSuite) TestDelete_DeleteAccount_ReturnsNilError() {
 
 	// Arrange
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(envVar.ApplicationUrl))
 
 	s.Require().NoError(err)
 
@@ -215,7 +209,7 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 
 	// Arrange
 
-	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(applicationUrl))
+	accountsClient, err := accounts.NewClient(accounts.WithBaseURL(envVar.ApplicationUrl))
 
 	s.Require().NoError(err)
 
@@ -233,53 +227,4 @@ func (s *e2eTestSuite) TestDelete_DeleteANonExistentccount_Returns404Error() {
 
 	assert.Equal(s.T(), "Error message returned by the API | 404 | ", err.Error(), "Error message didn't match the expected")
 
-}
-
-func initEnvVariables() {
-
-	localBaseUrl := "localhost"
-	localApiUrl := "http://localhost:8080"
-	localDatabasePort := "5432"
-	localDatabaseUser := "root"
-	localDatabasePwd := "password"
-
-	lookedUpAppUrl, ok := os.LookupEnv("API-URL")
-
-	if !ok {
-		applicationUrl = localApiUrl
-	} else {
-		applicationUrl = lookedUpAppUrl
-	}
-
-	lookedUpDatabaseHostUrl, ok := os.LookupEnv("PSQL_HOST")
-
-	if !ok {
-		databaseHostUrl = localBaseUrl
-	} else {
-		databaseHostUrl = lookedUpDatabaseHostUrl
-	}
-
-	lookedUpDatabasePort, ok := os.LookupEnv("PSQL_PORT")
-
-	if !ok {
-		databasePort = localDatabasePort
-	} else {
-		databasePort = lookedUpDatabasePort
-	}
-
-	lookedUpDatabaseUser, ok := os.LookupEnv("PSQL_USER")
-
-	if !ok {
-		databaseUser = localDatabaseUser
-	} else {
-		databaseUser = lookedUpDatabaseUser
-	}
-
-	lookedUpDatabasePwd, ok := os.LookupEnv("PSQL_PASSWORD")
-
-	if !ok {
-		databasePwd = localDatabasePwd
-	} else {
-		databasePwd = lookedUpDatabasePwd
-	}
 }

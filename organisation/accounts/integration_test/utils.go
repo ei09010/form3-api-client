@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,6 +30,51 @@ func (a *AccountAttributes) Scan(value interface{}) error {
 		return errors.New("type assertion to []byte failed")
 	}
 	return json.Unmarshal(b, &a)
+}
+
+type EnvVar struct {
+	ApplicationUrl, DatabaseHostUrl, DatabasePort, DatabaseUser, DatabasePwd, DatabaseName string
+}
+
+func (e *EnvVar) InitEnvVariables() {
+
+	localBaseUrl := "localhost"
+	localApiUrl := "http://localhost:8080"
+	localDatabasePort := "5432"
+	localDatabaseUser := "root"
+	localDatabasePwd := "password"
+
+	if lookedUpAppUrl, ok := os.LookupEnv("API-URL"); ok {
+		e.ApplicationUrl = lookedUpAppUrl
+	} else {
+		e.ApplicationUrl = localApiUrl
+	}
+
+	if lookedUpDatabaseHostUrl, ok := os.LookupEnv("PSQL_HOST"); ok {
+		e.DatabaseHostUrl = lookedUpDatabaseHostUrl
+	} else {
+		e.DatabaseHostUrl = localBaseUrl
+	}
+
+	if lookedUpDatabasePort, ok := os.LookupEnv("PSQL_PORT"); ok {
+		e.DatabasePort = lookedUpDatabasePort
+	} else {
+		e.DatabasePort = localDatabasePort
+	}
+
+	if lookedUpDatabaseUser, ok := os.LookupEnv("PSQL_USER"); ok {
+		e.DatabaseUser = lookedUpDatabaseUser
+	} else {
+		e.DatabaseUser = localDatabaseUser
+	}
+
+	if lookedUpDatabasePwd, ok := os.LookupEnv("PSQL_PASSWORD"); ok {
+		e.DatabasePwd = lookedUpDatabasePwd
+	} else {
+		e.DatabasePwd = localDatabasePwd
+	}
+
+	e.DatabaseName = "interview_accountapi"
 }
 
 func generateAccountDataToStore(id uuid.UUID) *Account {
