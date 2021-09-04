@@ -4,7 +4,7 @@
 
 ## Description
 
-This the Go Client for Form3 API Account Services. It is a Go library that enable a user to execute the following operations with the Form3 Accounts API:
+This is the Go Client for Form3 API Account Services. It is a Go library that enable a user to execute the following operations with the Form3 Accounts API:
 
 - Create
 - Fetch
