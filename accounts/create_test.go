@@ -188,6 +188,76 @@ func TestCreate_validAccountData_returnsStoredAccountsData(t *testing.T) {
 	}
 }
 
+func TestCreate_DuplicateAccountData_returns409StatusConflict(t *testing.T) {
+
+	// Arrange
+
+	expectedCorrectResponse := `{"error_message":"Account cannot be created as it violates a duplicate constraint"}`
+	expectedCorrectRequest := `/v1/organisation/accounts`
+	expectedErrorMessage := `Account cannot be created as it violates a duplicate constraint`
+	expectedStatus := http.StatusConflict
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedStatus)
+		io.WriteString(w, expectedCorrectResponse)
+	})
+
+	defer ts.Close()
+
+	ctx := context.Background()
+
+	accountClient, err := NewClient(WithBaseURL(ts.URL), WithTimeout(time.Duration(1000*time.Millisecond)))
+
+	// Act
+
+	response, err := accountClient.Create(ctx, generateValidGenericAccountData())
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, ApiHttpErrorType, expectedStatus)
+
+}
+
+func TestCreate_InvalidAccountData_returns400BadRequest(t *testing.T) {
+
+	// Arrange
+
+	expectedCorrectResponse := `{"error_message":"validation failure list:\nvalidation failure list:\nid in body is required"}`
+	expectedCorrectRequest := `/v1/organisation/accounts`
+	expectedErrorMessage := "validation failure list:\nvalidation failure list:\nid in body is required"
+	expectedStatus := http.StatusBadRequest
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedStatus)
+		io.WriteString(w, expectedCorrectResponse)
+	})
+
+	defer ts.Close()
+
+	ctx := context.Background()
+
+	accountClient, err := NewClient(WithBaseURL(ts.URL), WithTimeout(time.Duration(1000*time.Millisecond)))
+
+	// Act
+
+	response, err := accountClient.Create(ctx, generateValidGenericAccountData())
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, ApiHttpErrorType, expectedStatus)
+
+}
+
 func TestCreateErrorCases(t *testing.T) {
 
 	// Arrange

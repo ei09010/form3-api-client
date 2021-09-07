@@ -141,6 +141,76 @@ func TestFetch_validAccountId_returnsAccountsData(t *testing.T) {
 
 }
 
+func TestFetch_NonExistentAccountId_returns404NotFound(t *testing.T) {
+
+	// Arrange
+
+	expectedCorrectResponse := `{"error_message":"record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist"}`
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+	expectedErrorMessage := `record ad27e265-9605-4b4b-a0e5-3003ea9cc4dc does not exist`
+	expectedStatus := http.StatusNotFound
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedStatus)
+		io.WriteString(w, expectedCorrectResponse)
+	})
+
+	defer ts.Close()
+
+	ctx := context.Background()
+
+	// Act
+
+	accountsClient, err := NewClient(WithBaseURL(ts.URL), WithTimeout(time.Duration(100*time.Millisecond)))
+
+	response, err := accountsClient.Fetch(ctx, uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, ApiHttpErrorType, expectedStatus)
+
+}
+
+func TestFetch_BadRequest_returns400BadRequest(t *testing.T) {
+
+	// Arrange
+
+	expectedCorrectResponse := `{"error_message": "id is not a valid uuid"}`
+	expectedCorrectRequest := `/v1/organisation/accounts/ad27e265-9605-4b4b-a0e5-3003ea9cc4dc`
+	expectedErrorMessage := `id is not a valid uuid`
+	expectedStatus := http.StatusBadRequest
+
+	ts := newTestServer(expectedCorrectRequest, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(expectedStatus)
+		io.WriteString(w, expectedCorrectResponse)
+	})
+
+	defer ts.Close()
+
+	ctx := context.Background()
+
+	// Act
+
+	accountsClient, err := NewClient(WithBaseURL(ts.URL), WithTimeout(time.Duration(100*time.Millisecond)))
+
+	response, err := accountsClient.Fetch(ctx, uuid.MustParse("ad27e265-9605-4b4b-a0e5-3003ea9cc4dc"))
+
+	// Assert
+
+	if response != nil {
+		t.Errorf("Returned reponse: got %v want %v",
+			response, nil)
+	}
+
+	assertClientError(err, expectedErrorMessage, t, ApiHttpErrorType, expectedStatus)
+
+}
+
 type MockHttpClient struct {
 	DoFunc func(req *http.Request) (*http.Response, error)
 }
