@@ -1,7 +1,7 @@
 # Go client for Form3 Account Resources
 
-### Mário Pereira
-### I don't have commercial experience with Go.
+### Name: Mário Pereira
+### Disclaimer: I don't have commercial experience with Go.
 
 ## Description
 
