@@ -56,7 +56,7 @@ services:
     image: tests
     container_name: tests
     build:
-      context: ./organisation/accounts
+      context: ./accounts
       dockerfile: Dockerfile
     depends_on:
       - accountapi

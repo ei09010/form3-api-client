@@ -12,4 +12,4 @@ RUN go mod download
 COPY . .
 
 # Run unit, mock tests, Run integration tests
-CMD go test -v ./...
+CMD ["go", "test" , "-v" , "./..."]
