@@ -10,14 +10,11 @@ This is the Go Client for Form3 API Account Services. It is a Go library that en
 - Fetch
 - Delete
 
-## Requirements
-
- - If you only whish to run the automated tests (unit, mock and integration) : Docker recent version
-
-
 ## Instructions
 
- - If you are a reviewer from form3tech-interviewer-1, just checkout this repo and run `docker-compose up`
+ - Install Docker's most recent version
+
+ - Checkout this repo and run `docker-compose up` and watch the tests run!
 
 ## Usage
 

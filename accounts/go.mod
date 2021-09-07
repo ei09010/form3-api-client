@@ -1,4 +1,4 @@
-module ei09010/form3-api-client/accounts
+module ei09010/form3-api-client/organisation/accounts
 
 go 1.16
 
