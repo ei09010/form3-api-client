@@ -19,13 +19,13 @@ This is the Go Client for Form3 API Account Resources. It is a Go library that e
 
 ## Usage
 
-Sample usage of the Accounts API with a 10 second timeout value:
+Sample usage of the Accounts API with a 10 second timeout value (this is for reference only):
 
 ```go
 package main
 
 import (
-	"ei09010/form3-api-client/organisation/accounts"
+	"ei09010/form3-api-client/accounts"
 )
 
 func main() {
