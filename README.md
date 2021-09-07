@@ -45,9 +45,9 @@ func main() {
 
 ## Production client nice to haves
 
-- Rate limiting would to maintain a predictable and safe maximum threshold on the amount of requests executed per second (or other given time interval)
+- Rate limiting would maintain a predictable and safe maximum threshold on the amount of requests executed per second (or other given time interval)
 
-- Connection re-usage between http requests to enbale efficient resource usage
+- Connection re-usage between http requests for efficient resource usage ( both client and server side)
 
 - Validators for the account object properties (in the Create method) could save unnecessary requests
 
