@@ -14,7 +14,7 @@ This is the Go Client for Form3 API Account Services. It is a Go library that en
 
  - Install Docker's most recent version
 
- - Checkout this repo and run `docker-compose up` and watch the tests run!
+ - Checkout this repo, run `docker-compose up` and watch the tests run!
 
 ## Usage
 
