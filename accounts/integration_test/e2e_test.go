@@ -2,7 +2,7 @@ package integration
 
 import (
 	"context"
-	"ei09010/form3-api-client/organisation/accounts"
+	"ei09010/form3-api-client/accounts"
 	"fmt"
 	"testing"
 

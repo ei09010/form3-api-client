@@ -2,7 +2,7 @@ package integration
 
 import (
 	"database/sql/driver"
-	"ei09010/form3-api-client/organisation/accounts"
+	"ei09010/form3-api-client/accounts"
 	"encoding/json"
 	"errors"
 	"fmt"
