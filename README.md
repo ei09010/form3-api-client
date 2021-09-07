@@ -1,10 +1,10 @@
-# Go client for Form3 Organisation Account Services
+# Go client for Form3 Account Resources
 
 ### I don't have commercial experience with Go.
 
 ## Description
 
-This is the Go Client for Form3 API Account Services. It is a Go library that enable a user to execute the following operations with the Form3 Accounts API:
+This is the Go Client for Form3 API Account Resources. It is a Go library that enable a user to execute the following operations with the Form3 Accounts API:
 
 - Create
 - Fetch
@@ -51,4 +51,4 @@ func main() {
 
 - Validators for the account object properties (in the Create method) could save unnecessary requests
 
-- Monitoring: expose methods to make metrics available to be exported (Examples: requests per second, latency, error rate)
+- Monitoring: expose methods to make metrics available to be exported (Examples: requests per second, latency, error rate) 
