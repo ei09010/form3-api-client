@@ -30,7 +30,11 @@ func (c *Client) getJSON(ctx context.Context, accountId uuid.UUID, config *apiCo
 	httpResp, err := c.get(ctx, accountId, config)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
+		if httpResp != nil {
+			return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
+		} else {
+			return fmt.Errorf("%w | %d | %s", BuildingRequestError, http.StatusBadRequest, err)
+		}
 	}
 
 	resp.Status = httpResp.StatusCode

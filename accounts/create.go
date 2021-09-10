@@ -29,7 +29,11 @@ func (c *Client) postJSON(ctx context.Context, config *apiConfig, apiReqContent 
 	httpResp, err := c.post(ctx, apiReqContent, config)
 
 	if err != nil {
-		return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
+		if httpResp != nil {
+			return fmt.Errorf("%w | %d | %s", BuildingRequestError, httpResp.StatusCode, err)
+		} else {
+			return fmt.Errorf("%w | %d | %s", BuildingRequestError, http.StatusBadRequest, err)
+		}
 	}
 
 	resp.Status = httpResp.StatusCode

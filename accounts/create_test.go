@@ -3,6 +3,9 @@ package accounts
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"reflect"
 
 	"io"
 	"io/ioutil"
@@ -321,18 +324,39 @@ func TestCreateErrorCases(t *testing.T) {
 			},
 			accountPayload: generateValidGenericAccountData(),
 		},
+		"Nil http response": {
+			expectedErrorType:    BuildingRequestError,
+			expectedHttpStatus:   http.StatusBadRequest,
+			expectedErrorMessage: `Unmarshling "handler url": json: error calling MarshalJSON for type string: marshalling error`,
+			doError: &url.Error{
+				Err: &json.MarshalerError{
+					Type: reflect.TypeOf("batata"),
+					Err:  errors.New("marshalling error"),
+				},
+				Op:  "Unmarshling",
+				URL: "handler url",
+			},
+		},
 	}
 
 	for _, errCase := range errorCases {
 
-		accountErrClient := &MockHttpClient{
-			DoFunc: func(*http.Request) (*http.Response, error) {
+		var mockBehavior func(*http.Request) (*http.Response, error)
+
+		if errCase.accountId != "" {
+			mockBehavior = func(*http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: errCase.expectedHttpStatus,
 					Request:    &http.Request{URL: &url.URL{Path: errCase.requestPath}},
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(errCase.messageResponse))),
 				}, errCase.doError
-			},
+			}
+		} else {
+			mockBehavior = func(*http.Request) (*http.Response, error) { return nil, errCase.doError }
+		}
+
+		accountErrClient := &MockHttpClient{
+			DoFunc: mockBehavior,
 		}
 
 		accountsClient := &Client{

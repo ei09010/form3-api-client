@@ -3,10 +3,13 @@ package accounts
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
@@ -231,6 +234,7 @@ func TestFetchErrorCases(t *testing.T) {
 		expectedHttpStatus   int
 		expectedErrorType    error
 		doError              error
+		nilResponse          bool
 	}{
 		"Not found accountId": {
 			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
@@ -297,18 +301,41 @@ func TestFetchErrorCases(t *testing.T) {
 				Err: http.ErrHandlerTimeout,
 			},
 		},
+		"Nil http response": {
+			accountId:            "ad27e265-9605-4b4b-a0e5-3003ea9cc4dc",
+			nilResponse:          true,
+			expectedErrorType:    BuildingRequestError,
+			expectedHttpStatus:   http.StatusBadRequest,
+			expectedErrorMessage: `Unmarshling "handler url": json: error calling MarshalJSON for type string: marshalling error`,
+			doError: &url.Error{
+				Err: &json.MarshalerError{
+					Type: reflect.TypeOf("batata"),
+					Err:  errors.New("marshalling error"),
+				},
+				Op:  "Unmarshling",
+				URL: "handler url",
+			},
+		},
 	}
 
 	for _, errCase := range errorCases {
 
-		accountErrClient := &MockHttpClient{
-			DoFunc: func(*http.Request) (*http.Response, error) {
+		var mockBehavior func(*http.Request) (*http.Response, error)
+
+		if !errCase.nilResponse {
+			mockBehavior = func(*http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: errCase.expectedHttpStatus,
 					Request:    &http.Request{URL: &url.URL{Path: errCase.requestPath}},
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(errCase.messageResponse))),
 				}, errCase.doError
-			},
+			}
+		} else {
+			mockBehavior = func(*http.Request) (*http.Response, error) { return nil, errCase.doError }
+		}
+
+		accountErrClient := &MockHttpClient{
+			DoFunc: mockBehavior,
 		}
 
 		accountsClient := &Client{
